@@ -1,0 +1,14 @@
+{
+    "name": "erp/backend-server",
+    "description": "Enterprise Resources Planning High-Performance Core API",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "Core\\": "core/",
+            "App\\": "app/"
+        }
+    },
+    "require": {
+        "php": ">=8.1"
+    }
+}

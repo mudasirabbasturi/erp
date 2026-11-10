@@ -1,0 +1,193 @@
+:root {
+  --font-family: "Adobe Clean Regular", sans-serif;
+
+  /* Modern Professional Palette: Slate & Indigo */
+  --bg-color: #ffffff;
+  --bg-dim: #f8fafc;
+  --bg-sidebar: #ffffff;
+  --text-primary: #0f172a;
+  /* Slate 900 */
+  --text-secondary: #475569;
+  /* Slate 600 */
+  --text-muted: #94a3b8;
+  /* Slate 400 */
+
+  --border-color: #e2e8f0;
+  /* Slate 200 */
+  --sidebar-active: #e2e8f0;
+  --primary-color: #4f46e5;
+  /* Indigo 600 */
+  --primary-light: rgba(79, 70, 229, 0.1);
+  --primary-glow: rgba(79, 70, 229, 0.15);
+
+
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/**
+font-family: "Adobe Clean Light", sans-serif
+font-family: "Adobe Clean Light Italic", sans-serif
+font-family: "Adobe Clean Regular", sans-serif
+font-family: "Adobe Clean Italic", sans-serif
+font-family: "Adobe Clean Bold", sans-serif
+font-family: "Adobe Clean Bold Italic", sans-serif
+font-family: "Adobe Clean Semi Condensed", sans-serif
+font-family: "Adobe Clean Semi Condensed Italic", sans-serif
+font-family: "Adobe Clean Bold Semi Condensed", sans-serif
+font-family: "Adobe Clean Bold Semi Condensed Italic", sans-serif
+**/
+@font-face {
+  font-family: "Adobe Clean Light";
+  src: url("fonts/adobe/AdobeClean-Light.ttf");
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Adobe Clean Light Italic";
+  src: url("fonts/adobe/AdobeClean-LightIt.ttf");
+  font-weight: 300;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Adobe Clean Regular";
+  src: url("fonts/adobe/AdobeClean-Regular.ttf");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Adobe Clean Italic";
+  src: url("fonts/adobe/AdobeClean-It.ttf");
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Adobe Clean Bold";
+  src: url("fonts/adobe/AdobeClean-Bold.ttf");
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Adobe Clean Bold Italic";
+  src: url("fonts/adobe/AdobeClean-BoldItalic.ttf");
+  font-weight: bold;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Adobe Clean Semi Condensed";
+  src: url("fonts/adobe/AdobeClean-SemiCn.ttf");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Adobe Clean Semi Condensed Italic";
+  src: url("fonts/adobe/AdobeClean-SemiCnIt.ttf");
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Adobe Clean Bold Semi Condensed";
+  src: url("fonts/adobe/AdobeClean-BoldSemiCn.ttf");
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Adobe Clean Bold Semi Condensed Italic";
+  src: url("fonts/adobe/AdobeClean-BoldSemiCnIt.ttf");
+  font-weight: bold;
+  font-style: italic;
+}
+
+body * {
+  font-family: var(--font-family) !important;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling for simplebar if needed globally, though we use the component */
+/* Hide native scrollbar where simplebar is used */
+[data-simplebar] {
+  height: 100%;
+}
+
+/* ── SimpleBar – Excel-style scrollbar ─────────────────────────────── */
+
+/* Track: always invisible rail, no background by default */
+.simplebar-track {
+  border-radius: 0 !important;
+  background: transparent !important;
+  transition: background 0.15s ease !important;
+}
+
+.simplebar-track.simplebar-vertical {
+  width: 6px !important;
+  right: 0;
+}
+
+.simplebar-track.simplebar-horizontal {
+  height: 10px !important;
+  bottom: 0;
+}
+
+.simplebar-scrollbar {
+  border-radius: 0 !important;
+}
+
+/* Thumb: hidden by default (opacity 0 is SimpleBar's default, we just style the look) */
+.simplebar-scrollbar::before {
+  border-radius: 0 !important;
+  background: #c1c1c1 !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  transition: opacity 0.2s ease, background 0.15s ease !important;
+  opacity: 0 !important;
+}
+
+/* ── Show scrollbar on HOVER of the container ── */
+[data-simplebar]:hover .simplebar-track {
+  background: #f1f1f1 !important;
+}
+
+[data-simplebar]:hover .simplebar-scrollbar::before {
+  opacity: 1 !important;
+}
+
+/* Thumb darkens on hover (Excel behaviour) */
+[data-simplebar]:hover .simplebar-track:hover .simplebar-scrollbar::before {
+  background: #a8a8a8 !important;
+}
+
+/* Dragging – keep fully visible and darkest */
+.simplebar-scrollbar.simplebar-dragging::before {
+  opacity: 1 !important;
+  background: #8c8c8c !important;
+}

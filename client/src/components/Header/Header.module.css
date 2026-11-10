@@ -1,0 +1,298 @@
+.header {
+    height: 48px;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 1000;
+    /* Higher than sidebar */
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    /* Align with sidebar width or standard padding */
+}
+
+.leftSection {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo {
+    height: 28px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+}
+
+.toggleButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.toggleButton:hover {
+    background-color: var(--sidebar-active);
+    color: var(--text-primary);
+}
+
+/* Desktop wrapper for two sidebar controls */
+.sidebarControls {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+/* Thin vertical divider between the two desktop buttons */
+.sidebarDivider {
+    width: 1px;
+    height: 14px;
+    background-color: var(--border-color);
+    margin: 0 3px;
+    flex-shrink: 0;
+}
+
+/* Replace the existing visibilityPill and pillActive styles with these */
+
+/* ── Professional Show/Hide Toggle ──────────────────────────── */
+.visibilityPill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    width: 28px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    line-height: 1;
+    position: relative;
+}
+
+.visibilityPill::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.visibilityPill:hover {
+    background-color: var(--sidebar-active);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+/* Active state - when sidebar is hidden */
+.pillActive {
+    background-color: var(--sidebar-active);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.pillActive:hover {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    border-color: var(--primary-color);
+}
+
+/* Add a subtle tooltip on hover */
+.visibilityPill::after {
+    content: attr(aria-label);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: #1f2937;
+    color: #ffffff;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.15s ease;
+    font-weight: 400;
+    letter-spacing: 0.3px;
+}
+
+.visibilityPill:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.rightSection {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.iconButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 50%;
+    position: relative;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.iconButton:hover {
+    background-color: var(--bg-dim);
+    color: var(--primary-color);
+}
+
+.badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    background-color: #ef4444;
+    /* red-500 */
+    border-radius: 50%;
+    border: 1px solid var(--bg-color);
+}
+
+.profileContainer {
+    position: relative;
+}
+
+.profileButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.profileButton:hover,
+.profileButton.active {
+    background-color: var(--bg-dim);
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--border-color);
+}
+
+.userInfo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    display: none;
+    /* Hide on mobile by default */
+}
+
+@media (min-width: 768px) {
+    .userInfo {
+        display: flex;
+    }
+}
+
+.userName {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.userRole {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+/* Dropdown Menu */
+.dropdownMenu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 200px;
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: 4px 0;
+    z-index: 1001;
+    transform-origin: top right;
+}
+
+.dropdownHeader {
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 4px;
+}
+
+.dropdownLabel {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dropdownItem {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-primary);
+    transition: background-color 0.1s, color 0.1s;
+    text-align: left;
+}
+
+.dropdownItem:hover {
+    background-color: var(--bg-dim);
+    color: var(--primary-color);
+}
+
+.divider {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 4px 0;
+}
+
+.logout {
+    color: #ef4444;
+    /* red-500 */
+}
+
+.logout:hover {
+    background-color: #fef2f2;
+    /* red-50 */
+    color: #dc2626;
+    /* red-600 */
+}

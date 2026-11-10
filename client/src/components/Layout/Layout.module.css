@@ -1,0 +1,73 @@
+.layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.container {
+    display: flex;
+    flex: 1;
+    padding-top: 48px;
+    /* Header height */
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.mainContent {
+    flex: 1;
+    min-width: 0;
+    background-color: var(--bg-dim);
+    transition: margin-left 0.2s ease-in-out, width 0.2s ease-in-out, max-width 0.2s ease-in-out;
+    min-height: calc(100vh - 48px);
+    box-sizing: border-box;
+}
+
+.expanded {
+    margin-left: 260px;
+    width: calc(100% - 260px);
+    max-width: calc(100% - 260px);
+}
+
+.mini {
+    margin-left: 72px;
+    width: calc(100% - 72px);
+    max-width: calc(100% - 72px);
+}
+
+.hidden {
+    margin-left: 0;
+    width: 100%;
+    max-width: 100%;
+}
+
+.mobileMain {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.backdrop {
+    position: fixed;
+    top: 48px;
+    left: 0;
+    width: 100vw;
+    height: calc(100vh - 48px);
+    background-color: rgba(0, 0, 0, 0.3);
+    z-index: 950;
+    /* Between Sidebar (900->update) and Header (1000) */
+}
+
+.contentInner {
+    padding: 24px;
+    height: 100%;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}

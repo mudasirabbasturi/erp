@@ -1,0 +1,29 @@
+================================================================================
+IMPORTANT DATABASE MIGRATION & REAL DATA IMPORT REMINDER
+================================================================================
+Module: Projects (D:\rehan\IMP\projects.sql)
+Generated on: 2026-11-02
+
+1. REAL DATA IMPORT:
+   - Full real dataset from `D:\rehan\IMP\projects.sql` will be imported later.
+   - Initial sample records are currently active for UI & AG Grid testing.
+
+2. COLUMN MODIFICATIONS APPLIED:
+   - `client_name_for_admin` is REMOVED from `projects` table:
+     * Client names are now centrally managed in the `clients` table.
+     * When importing real data, copy/match `client_name_for_admin` values into 
+       the `clients` table and link them via `projects.client_id`.
+   - `project_notes_estimator` -> renamed to `project_notes`
+   - `notes_private`           -> renamed to `project_private_notes`
+   - `budget_total`            -> renamed to `project_total_budget`
+   - `deduction_amount`        -> renamed to `project_deduction_amount`
+   - `project_status`          -> renamed to `project_progress_status`
+   - `preview_status`          -> renamed to `project_preview_status`
+   - `late`                    -> renamed to `is_project_late`
+
+3. DYNAMIC COLUMN ARCHITECTURE:
+   - All columns are registered in `entity_column_configs` with `entity = 'projects'`.
+   - Dynamic columns added via the Schema Manager (`/database/tables/projects`) 
+     are automatically included in queries and forms.
+================================================================================
+

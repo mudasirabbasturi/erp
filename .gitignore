@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Environment files
+server/.env
+client/.env.local
+
+# Logs and cache
+server/storage/logs/*.log
+*.log
+
+# Raw legacy dumps (the complete database is packaged in database_imp_export.zip)
+db-samples/
+project_team_members.sql
+company.txt
+
+# Editor and OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+

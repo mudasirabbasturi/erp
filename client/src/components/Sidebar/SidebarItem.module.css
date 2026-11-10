@@ -1,0 +1,214 @@
+.menuItem {
+    position: relative;
+    list-style: none;
+    margin: 2px 8px;
+}
+
+.nestedItem {
+    margin: 0;
+}
+
+.menuHeader {
+    display: flex;
+    align-items: center;
+    height: 42px;
+    padding: 0 12px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    border-radius: 8px;
+    transition: var(--transition);
+    user-select: none;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.nestedHeader {
+    height: 36px;
+    font-size: 13px;
+}
+
+.menuHeader:hover {
+    background-color: var(--primary-glow);
+    color: var(--primary-color);
+}
+
+.activeParent {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.miniHeader {
+    justify-content: center;
+    padding: 0;
+    margin: 4px 0;
+}
+
+.icon {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    transition: var(--transition);
+}
+
+.charFallback {
+    font-size: 12px;
+    font-weight: 700;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-color);
+    border-radius: 6px;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+}
+
+.title {
+    margin-left: 12px;
+    flex: 1;
+    opacity: 0.9;
+}
+
+.subLabel {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.subLabel::before {
+    content: '✔';
+    font-size: 12px;
+    margin-right: 10px;
+    color: var(--text-muted);
+    opacity: 0.6;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: var(--transition);
+}
+
+.chevron {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+}
+
+/* Inline Submenu (Expanded) */
+.inlineSubmenu {
+    list-style: none;
+    padding: 0;
+    /* margin-left: 18px; */
+    border-left: 1.5px solid var(--border-color);
+    position: relative;
+}
+
+/* Guide lines for deeper levels */
+.inlineSubmenu .inlineSubmenu {
+    border-left: 1px solid #cbd5e1;
+    margin-left: 14px;
+}
+
+.menuLink {
+    text-decoration: none;
+    display: block;
+    color: inherit;
+}
+
+/* Reverted to subtle Active style */
+.activeLink .menuHeader {
+    background-color: var(--primary-light) !important;
+    color: var(--primary-color) !important;
+}
+
+.activeLink .chevron,
+.activeLink .charFallback {
+    color: var(--primary-color) !important;
+}
+
+.activeLink .charFallback {
+    background-color: #ffffff;
+    border-color: var(--primary-color);
+}
+
+/* Flyout (Mini Mode) */
+.flyout {
+    position: fixed;
+    left: 72px;
+    width: 220px;
+    background-color: #ffffff;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    z-index: 1100;
+    padding: 8px 0;
+    animation: slideIn 0.2s ease-out;
+}
+
+.flyoutHeader {
+    padding: 8px 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 14px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 4px;
+}
+
+.flyoutList {
+    padding: 4px 0;
+    list-style: none;
+}
+
+.flyoutItem {
+    padding: 8px 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    display: block;
+}
+
+.flyoutItem:hover,
+.flyoutActive {
+    color: var(--primary-color);
+    background-color: var(--primary-light);
+}
+
+.flyoutActive {
+    font-weight: 600;
+}
+
+.flyoutSubGroup {
+    padding: 4px 0;
+}
+
+.flyoutSubHeader {
+    padding: 4px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}

@@ -1,0 +1,2099 @@
+/* ==========================================================================
+   Project View Module CSS - Faithful to project-view-sample.html
+   Modern Financial Summary, Multi-Client Accordion, AG-Grid Team Section
+   ========================================================================== */
+
+.projectView {
+    max-width: 1440px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    padding: 24px;
+    color: #1e293b;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.45;
+}
+
+/* ==========================================================================
+   1. HEADER CARD
+   ========================================================================== */
+.headerCard {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 22px 28px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.02), 0 2px 6px rgba(0, 0, 0, 0.02);
+    border: 1px solid #e9eef3;
+    transition: box-shadow 0.2s ease;
+    gap: 16px;
+}
+
+.headerCard:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.headerTopRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.headerTitleGroup {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1 1 450px;
+    min-width: 0;
+}
+
+.headerMetaRow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding-top: 14px;
+    border-top: 1px solid #f1f5f9;
+    width: 100%;
+}
+
+.headerLeft {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1 1 400px;
+}
+
+.titleRow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.backBtn {
+    background: #ffffff;
+    border: 1px solid #d0dae6;
+    border-radius: 12px;
+    padding: 8px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.backBtn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #1e293b;
+}
+
+.projectTitle {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: #0b1a2b;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+}
+
+.projectTitle svg {
+    color: #4f6ef7;
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.statusBadge {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #d1dbe7;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 4px 12px;
+    border-radius: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.statusHold {
+    background: #f1f5f9;
+    color: #475569;
+    border-color: #cbd5e1;
+}
+
+.statusCompleted {
+    background: #ecfdf5;
+    color: #059669;
+    border-color: #a7f3d0;
+}
+
+.statusTakeoff {
+    background: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+}
+
+.statusPricing {
+    background: #f5f3ff;
+    color: #7c3aed;
+    border-color: #ddd6fe;
+}
+
+.statusRevision {
+    background: #fffbeb;
+    color: #d97706;
+    border-color: #fde68a;
+}
+
+.lateBadge {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 4px 9px;
+    border-radius: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.subtitle {
+    font-size: 13px;
+    color: #7d8fa3;
+    margin-left: 4px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.dot {
+    width: 3px;
+    height: 3px;
+    background: #b9c8da;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.btnSecondary,
+.btnPrimary {
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 10px 20px;
+    font-weight: 600;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    letter-spacing: 0.2px;
+}
+
+.btnSecondary {
+    background: #ffffff;
+    border-color: #d0dae6;
+    color: #1f3a5f;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.btnSecondary:hover {
+    background: #f9fcff;
+    border-color: #b6c8dd;
+    color: #0b1a2b;
+}
+
+.btnPrimary {
+    background: #4f6ef7;
+    border-color: #3e5ce0;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(79, 110, 247, 0.2);
+}
+
+.btnPrimary:hover {
+    background: #3e5ce0;
+    box-shadow: 0 6px 14px rgba(79, 110, 247, 0.25);
+}
+
+/* ==========================================================================
+   2. FINANCIAL SUMMARY CARD (.finCard) — WITH DEFAULT COLLAPSE SUPPORT
+   ========================================================================== */
+.finCard {
+    background: #ffffff;
+    border-radius: 24px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+    padding: 24px 32px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.finCard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6, #3b82f6);
+    border-radius: 24px 24px 0 0;
+}
+
+.finHeaderTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.finHeaderMain {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.finIconBox {
+    width: 48px;
+    height: 48px;
+    background: #eef2ff;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4f46e5;
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.finTitle {
+    font-size: 24px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.finSubtitle {
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 400;
+    margin-top: 3px;
+}
+
+.finHeaderRight {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.finToggleBtn {
+    background: #f8fafc;
+    border: 1px solid #d0dae6;
+    border-radius: 10px;
+    padding: 7px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.finToggleBtn:hover {
+    background: #eef4fe;
+    border-color: #cbd5e1;
+    color: #1e293b;
+}
+
+.finMetaBadges {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.finBadgeDate {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.finBadgeDate svg {
+    color: #94a3b8;
+    font-size: 15px;
+}
+
+.finBadgeStatus {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    color: #b45309;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.finBadgeStatus svg {
+    color: #f59e0b;
+    font-size: 14px;
+}
+
+/* Expanded Content */
+.finExpandedContent {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.finPanels {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 26px;
+}
+
+.finPanel {
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    min-height: 160px;
+    position: relative;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.finPanel:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
+}
+
+.finPanelNet {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+}
+
+.finPanelNet:hover {
+    border-color: #a5b4fc;
+}
+
+.finPanelIcon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-bottom: 12px;
+}
+
+.finPanelBudget .finPanelIcon {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.finPanelDeduction .finPanelIcon {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.finPanelNet .finPanelIcon {
+    background: #ffffff;
+    color: #4f46e5;
+}
+
+.finPanelLabel {
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 4px;
+}
+
+.finPanelNet .finPanelLabel {
+    color: #3730a3;
+}
+
+.finPanelValue {
+    font-size: 32px;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1.1;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.finPanelDeduction .finPanelValue {
+    color: #10b981;
+}
+
+.finPanelNet .finPanelValue {
+    color: #3730a3;
+}
+
+.dash {
+    display: inline-block;
+    width: 32px;
+    height: 4px;
+    background: #cbd5e1;
+    border-radius: 2px;
+    vertical-align: middle;
+    margin-bottom: 4px;
+}
+
+.finPanelNet .dash {
+    background: #a5b4fc;
+}
+
+.finPanelHint {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #94a3b8;
+}
+
+.finPanelNet .finPanelHint {
+    color: #6366f1;
+}
+
+.finPanelDeduction .finPanelHint {
+    color: #059669;
+}
+
+.finUtilizationRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 0 10px;
+}
+
+.finUtilLabel {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.finUtilDonutWrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+.finUtilDonut {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(#cbd5e1 0%, #cbd5e1 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s ease;
+}
+
+.finUtilDonutInner {
+    width: 64px;
+    height: 64px;
+    background: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.finUtilPct {
+    font-size: 20px;
+    font-weight: 800;
+    color: #475569;
+    line-height: 1;
+}
+
+.finUtilSub {
+    font-size: 9px;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.finAlert {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.finAlert svg {
+    color: #4f46e5;
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* ==========================================================================
+   3. MODERN REFINED N/A STATES (From User's Custom Design)
+   ========================================================================== */
+
+/* 1. Pure Badge (Minimal, Inline) */
+.naBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f8fafc;
+    color: #94a3b8;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    letter-spacing: 0.5px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+    user-select: none;
+    line-height: 1.3;
+}
+
+.naBadge svg {
+    font-size: 10px;
+    color: #cbd5e1;
+}
+
+/* 2. Floating Pill (Soft gradient, Standalone) */
+.naPill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    padding: 5px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    user-select: none;
+}
+
+.naPill svg {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+/* 3. Ghost Text (With elegant dash) */
+.naText {
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 13.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.3px;
+    user-select: none;
+}
+
+.dashLine {
+    display: inline-block;
+    width: 18px;
+    height: 2px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
+}
+
+/* 4. Input-Alike Field (Disabled state look) */
+.naField {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fdfdfd;
+    border: 1px solid #e2e8f0;
+    padding: 9px 13px;
+    border-radius: 10px;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.01);
+}
+
+.naField svg {
+    font-size: 14px;
+    color: #cbd5e1;
+    width: 16px;
+    text-align: center;
+}
+
+/* 5. Dashed Placeholder (Large Area) */
+.naDashed {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: #fafdff;
+    border: 1.5px dashed #cbd5e1;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 14px;
+    border-radius: 12px;
+    letter-spacing: 0.3px;
+    transition: background 0.2s, border-color 0.2s;
+    user-select: none;
+}
+
+.naDashed:hover {
+    background: #f4f9ff;
+    border-color: #b0c4de;
+}
+
+.naDashed svg {
+    color: #cbd5e1;
+    font-size: 16px;
+}
+
+/* 6. Large Empty State Block (Section Level) */
+.naBlock {
+    background: radial-gradient(circle at top right, #ffffff, #f4f7fb);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+}
+
+.naBlock::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 100px;
+    height: 100px;
+    background: #f1f5f9;
+    border-radius: 50%;
+    opacity: 0.5;
+    z-index: 0;
+}
+
+.naBlock svg {
+    font-size: 28px;
+    color: #cbd5e1;
+    margin-bottom: 4px;
+    z-index: 1;
+}
+
+.naBlockTitle {
+    font-size: 14px;
+    font-weight: 800;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    z-index: 1;
+}
+
+.naBlockText {
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 500;
+    max-width: 300px;
+    z-index: 1;
+}
+
+/* ==========================================================================
+   4. TWO COLUMN LAYOUT & CARDS
+   ========================================================================== */
+.twoColLayout {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 22px;
+    align-items: start;
+}
+
+.column {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.card {
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid #e9eef3;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+}
+
+.cardHeader {
+    padding: 15px 20px;
+    background: #fbfdff;
+    border-bottom: 1px solid #edf2f8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e2f44;
+    letter-spacing: 0.2px;
+}
+
+.cardHeaderTitle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cardHeaderTitle svg {
+    font-size: 16px;
+    color: #4f6ef7;
+    width: 20px;
+    text-align: center;
+}
+
+.headerIconAmber {
+    color: #f59e0b !important;
+}
+
+.headerIconGreen {
+    color: #10b981 !important;
+}
+
+.cardBody {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.fieldGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+}
+
+.fieldTile {
+    background: #f9fcff;
+    border: 1px solid #eef3f9;
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.fieldTile .fieldLabel {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #7d8fa3;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.fieldTile .fieldLabel svg {
+    font-size: 13px;
+    color: #b0c3da;
+    width: 14px;
+    text-align: center;
+}
+
+.fieldTile .fieldValue {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1b2b3f;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.richTextBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.richTextBlock .fieldLabel {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #7d8fa3;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.richTextBlock .fieldLabel svg {
+    color: #b0c3da;
+    font-size: 13px;
+}
+
+.richTextContent {
+    background: #f9fcff;
+    border: 1px solid #eef3f9;
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 13.5px;
+    color: #2b3e57;
+    line-height: 1.65;
+}
+
+.linkRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.linkBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    border-radius: 14px;
+    background: #f0f4fe;
+    color: #1d4ed8;
+    border: 1px solid #cfdefb;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.linkBtn:hover {
+    background: #e0ecff;
+    border-color: #bad3fa;
+    color: #1e40af;
+}
+
+.linkBtnGreen {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
+.linkBtnGreen:hover {
+    background: #d1fae5;
+    border-color: #6ee7b7;
+    color: #065f46;
+}
+
+.linkBtnMuted {
+    background: #f8fafc;
+    color: #94a3b8;
+    border: 1px solid #e2e8f0;
+    font-weight: 500;
+    cursor: default;
+}
+
+/* ==========================================================================
+   5. ASSIGNED CLIENTS — TIGHT ACCORDION TOGGLE
+   ========================================================================== */
+.clientsList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.clientCard {
+    background: #ffffff;
+    border: 1px solid #e9eef3;
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.clientCard:hover {
+    border-color: #d0ddec;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.clientCardTop {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #fcfeff;
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+}
+
+.clientCardTop:hover {
+    background: #f5f9ff;
+}
+
+.clientCardExpanded .clientCardTop {
+    border-bottom: 1px solid #f1f6fb;
+    background: #fbfdff;
+}
+
+.expanderBtnClient {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: #ffffff;
+    border: 1px solid #d6e2f0;
+    color: #5b6f8c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+    transition: all 0.15s;
+}
+
+.clientCardExpanded .expanderBtnClient {
+    background: #4f6ef7;
+    border-color: #4f6ef7;
+    color: #ffffff;
+}
+
+.clientAvatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+
+.clientAvatarAdmin {
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.2);
+}
+
+.clientAvatarNormal {
+    background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+    box-shadow: 0 2px 6px rgba(14, 165, 233, 0.2);
+}
+
+.clientHeadInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.clientHeadName {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.clientHeadName .name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0b1a2b;
+}
+
+.clientTypeBadge {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 2px 8px;
+    border-radius: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.clientTypeBadgeAdmin {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.clientTypeBadgeNormal {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.clientHeadSub {
+    font-size: 11px;
+    color: #7d8fa3;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.clientStatusPill {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 2px 8px;
+    border-radius: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+}
+
+.clientStatusActive {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.clientStatusInactive {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+.clientCardBody {
+    padding: 12px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #ffffff;
+}
+
+.clientFields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+}
+
+.clientField {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: #f9fcff;
+    border: 1px solid #eef3f9;
+    border-radius: 10px;
+    padding: 8px 10px;
+    min-width: 0;
+}
+
+.clientField .cfLabel {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #8b9eb5;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.clientField .cfLabel svg {
+    font-size: 10px;
+    color: #b7c9dd;
+    width: 10px;
+    text-align: center;
+}
+
+.clientField .cfValue {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1b2b3f;
+    word-break: break-word;
+    line-height: 1.3;
+}
+
+.clientField .cfValue a {
+    color: #4f6ef7;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.clientField .cfValue a:hover {
+    text-decoration: underline;
+}
+
+.clientNotesBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.clientNotesLabel {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #8b9eb5;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.clientNotesLabel svg {
+    font-size: 10px;
+    color: #b7c9dd;
+}
+
+.clientNotesContent {
+    background: #f9fcff;
+    border: 1px solid #eef3f9;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #4f647b;
+    line-height: 1.45;
+}
+
+.addClientPlaceholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    border: 1.5px dashed #dae4f0;
+    border-radius: 12px;
+    background: #fafdff;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: all 0.15s ease;
+}
+
+.addClientPlaceholder:hover {
+    background: #f0f7ff;
+    border-color: #bcd0e8;
+    color: #4f6ef7;
+}
+
+.addClientPlaceholder svg {
+    font-size: 15px;
+    color: #b0c3da;
+}
+
+.permissionPlaceholder {
+    background: #f7faff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    border: 1px solid #e3ebf5;
+    color: #7f93ab;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.permissionPlaceholder svg {
+    color: #b0c3da;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+/* ==========================================================================
+   6. NOTES & REMARKS BOXES
+   ========================================================================== */
+.notesBox {
+    background: #fbfdff;
+    border: 1px solid #edf2f8;
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 13.5px;
+    color: #334155;
+    line-height: 1.6;
+}
+
+.privateNotesBox {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 13.5px;
+    color: #991b1b;
+    line-height: 1.6;
+}
+
+.activityFeedList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.activityFeedItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 13px;
+}
+
+.activityFeedIcon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.activityFeedIconGreen {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.activityFeedIconBlue {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.activityFeedTitle {
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.4;
+}
+
+.activityFeedMeta {
+    font-size: 11.5px;
+    color: #8b9eb5;
+    margin-top: 2px;
+}
+
+/* ==========================================================================
+   7. TEAM SECTION — POWERED BY AG-GRID (User Request)
+   ========================================================================== */
+.teamSection {
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid #e9eef3;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+}
+
+.teamSectionHeader {
+    padding: 16px 22px;
+    background: #fbfdff;
+    border-bottom: 1px solid #edf2f8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.teamSectionHeaderLeft {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e2f44;
+}
+
+.teamSectionHeaderLeft svg {
+    color: #8b5cf6;
+    font-size: 18px;
+}
+
+.teamCountBadge {
+    background: #eef2fe;
+    color: #4f6ef7;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 30px;
+    border: 1px solid #dbe4fb;
+}
+
+.teamSectionHeaderRight {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.teamPointsSummary {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 12px;
+    color: #5b6f8c;
+    font-weight: 600;
+}
+
+.teamPointsSummary svg {
+    font-size: 13px;
+}
+
+.pointsBarWrap {
+    height: 7px;
+    background: #eef2f8;
+    border-radius: 20px;
+    overflow: hidden;
+    min-width: 120px;
+    flex: 1;
+    max-width: 200px;
+}
+
+.pointsBarFill {
+    height: 100%;
+    background: linear-gradient(90deg, #4f6ef7, #8b5cf6);
+    border-radius: 20px;
+    transition: width 0.3s ease;
+}
+
+.teamListContainer {
+    padding: 16px 20px;
+}
+
+.teamList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.teamListItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: #ffffff;
+    border: 1px solid #e9eef3;
+    border-radius: 14px;
+    transition: all 0.15s ease;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.teamListItem:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03);
+    background: #fafbfc;
+}
+
+.teamMemberMain {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 200px;
+}
+
+.teamMemberAvatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.teamMemberInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.teamMemberName {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.teamMemberRole {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.teamMemberSteps {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 1 1 200px;
+}
+
+.teamMemberProgress {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 130px;
+}
+
+.teamMemberProgressLabel {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.teamMemberProgressBar {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.teamMemberProgressBarFill {
+    height: 100%;
+    background: linear-gradient(90deg, #4f46e5, #06b6d4);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.teamMemberMeta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.teamPointsBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    color: #b45309;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.teamStatusBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.teamStatusActive {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+
+.teamStatusIdle {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.agGridTeamContainer {
+    padding: 16px;
+}
+
+/* Custom Cell Renderers for Team AG-Grid */
+.memberCell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 100%;
+}
+
+.memberAvatarTd {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.memberAvatarPrimary {
+    background: linear-gradient(135deg, #4f6ef7, #8b5cf6);
+}
+
+.memberAvatarAlt1 {
+    background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+}
+
+.memberAvatarAlt2 {
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+}
+
+.memberCellInfo {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+}
+
+.memberCellName {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0b1a2b;
+    line-height: 1.2;
+}
+
+.memberCellSub {
+    font-size: 11px;
+    color: #8b9eb5;
+}
+
+.tasksChipsMini {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: auto;
+    margin: auto 0;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.taskChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid;
+    white-space: nowrap;
+    line-height: 1.2;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.taskChipComplete {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
+.taskChipProgress {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.taskChipPending {
+    background: #fffbeb;
+    color: #b45309;
+    border-color: #fde68a;
+}
+
+.progressBarSm {
+    height: 6px;
+    background: #eef2f8;
+    border-radius: 20px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.progressBarSmFill {
+    height: 100%;
+    border-radius: 20px;
+    background: linear-gradient(90deg, #4f6ef7, #8b5cf6);
+}
+
+.pointsValue {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.2;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.pointsValue svg {
+    font-size: 11px;
+    color: #f59e0b;
+}
+
+.memberStatus {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    border: 1px solid;
+    line-height: 1.2;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.memberStatusActive {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
+.memberStatusBusy {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.memberStatusIdle {
+    background: #f1f5f9;
+    color: #475569;
+    border-color: #cbd5e1;
+}
+
+/* Team Points Edit Button & Client Action Buttons */
+.btnEditPoints {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #4f46e5;
+    color: #ffffff;
+    border: 1px solid #4338ca;
+    border-radius: 7px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.25);
+    transition: all 0.15s ease;
+}
+
+.btnEditPoints:hover {
+    background: #4338ca;
+    transform: translateY(-1px);
+}
+
+.btnAddClient {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #f8fafc;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btnAddClient:hover {
+    background: #ffffff;
+    border-color: #4f46e5;
+    color: #4f46e5;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* ==========================================================================
+   8. RESPONSIVE MEDIA QUERIES
+   ========================================================================== */
+@media (max-width: 1000px) {
+    .twoColLayout {
+        grid-template-columns: 1fr;
+    }
+
+    .finPanels {
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+}
+
+@media (max-width: 640px) {
+    .projectView {
+        padding: 16px;
+    }
+
+    .headerCard {
+        padding: 18px;
+    }
+
+    .projectTitle {
+        font-size: 20px;
+    }
+
+    .fieldGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .clientFields {
+        grid-template-columns: 1fr;
+    }
+
+    .finPanels {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .finCard {
+        padding: 20px;
+    }
+
+    .finSubtitle {
+        margin-left: 0;
+    }
+}
+
+/* ==========================================================================
+   QUICK EDIT BUTTONS & MODALS
+   ========================================================================== */
+.fieldTileHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    width: 100%;
+}
+
+.fieldEditBtn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    line-height: 1;
+}
+
+.fieldEditBtn:hover {
+    background: #eef2ff;
+    color: #4f46e5;
+    transform: scale(1.12);
+}
+
+.cardHeaderActionBtn {
+    background: #ffffff;
+    border: 1px solid #d0dae6;
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #475569;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+}
+
+.cardHeaderActionBtn:hover {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    color: #4f46e5;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.12);
+}
+
+.metaEditBtn {
+    background: #ffffff;
+    border: 1px solid #d0dae6;
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #475569;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+}
+
+.metaEditBtn:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #1e293b;
+}
+
+.titleEditBtn {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    margin-left: 4px;
+}
+
+.titleEditBtn:hover {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    color: #4f46e5;
+    transform: scale(1.08);
+}
+
+.clientEditPill {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+    margin-left: auto;
+}
+
+.clientEditPill:hover {
+    background: #4f46e5;
+    color: #ffffff;
+    border-color: #4f46e5;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+}
+
+.clientEditActionBtn {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+}
+
+.clientEditActionBtn:hover {
+    background: #4f46e5;
+    color: #ffffff;
+    border-color: #4f46e5;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
+}
+
+/* Modal Form Styles */
+.modalBodyWrap {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: calc(85vh - 120px);
+    overflow-y: auto;
+}
+
+.modalGrid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.modalGrid3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+}
+
+@media (max-width: 600px) {
+    .modalGrid2, .modalGrid3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.modalFormGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.modalLabel {
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.modalInput {
+    padding: 9px 12px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: #0f172a;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    width: 100%;
+}
+
+.modalInput:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.modalTextarea {
+    padding: 10px 12px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: #0f172a;
+    outline: none;
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+    line-height: 1.5;
+    width: 100%;
+}
+
+.modalTextarea:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.modalFooterActions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 14px;
+    border-top: 1px solid #f1f5f9;
+    margin-top: 8px;
+}
+
+.modalCancelBtn {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.modalCancelBtn:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+
+.modalSaveBtn {
+    background: #4f46e5;
+    border: 1px solid #4f46e5;
+    color: #ffffff;
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+}
+
+.modalSaveBtn:hover {
+    background: #4338ca;
+    border-color: #4338ca;
+}
+
+.modalSaveBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

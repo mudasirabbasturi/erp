@@ -1,0 +1,50 @@
+.sidebar {
+    position: fixed;
+    top: 48px;
+    left: 0;
+    height: calc(100vh - 48px);
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    transition: var(--transition);
+    flex-shrink: 0;
+    z-index: 960;
+}
+
+.expanded {
+    width: 260px;
+    transform: translateX(0);
+}
+
+.mini {
+    width: 72px;
+    transform: translateX(0);
+}
+
+.hidden {
+    /* Maintain width but slide out */
+    width: 260px;
+    transform: translateX(-100%);
+    border-right: none;
+}
+
+.mobile {
+    /* Mobile specific overrides if any, usually handled by state classes mostly */
+    box-shadow: 4px 0 8px rgba(0, 0, 0, 0.05);
+    /* Shadow when expanded on mobile */
+}
+
+/* Ensure hidden on mobile also slides out */
+.mobile.hidden {
+    transform: translateX(-100%);
+    width: 240px;
+}
+
+.nav {
+    padding: 8px 0;
+}
+
+.menuList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}

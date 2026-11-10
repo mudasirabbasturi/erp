@@ -1,0 +1,76 @@
+.editorWrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.editorWrapper :global(.ql-toolbar.ql-snow) {
+    border: 1px solid #cbd5e1;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    background-color: #f8fafc;
+    padding: 6px 10px;
+}
+
+.editorWrapper :global(.ql-container.ql-snow) {
+    border: 1px solid #cbd5e1;
+    border-top: none;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    font-family: 'Adobe Clean', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 13px;
+    color: #1e293b;
+    background-color: #ffffff;
+    min-height: 110px;
+    transition: border-color 0.15s ease;
+}
+
+.editorWrapper:focus-within :global(.ql-toolbar.ql-snow) {
+    border-color: #6366f1;
+}
+
+.editorWrapper:focus-within :global(.ql-container.ql-snow) {
+    border-color: #6366f1;
+}
+
+.editorWrapper :global(.ql-editor) {
+    min-height: 110px;
+    padding: 10px 14px;
+    line-height: 1.55;
+}
+
+.editorWrapper :global(.ql-editor.ql-blank::before) {
+    font-style: normal;
+    color: #94a3b8;
+    font-family: 'Adobe Clean', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 13px;
+}
+
+.readOnlyWrapper :global(.ql-toolbar.ql-snow) {
+    display: none;
+}
+
+.readOnlyWrapper :global(.ql-container.ql-snow) {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background-color: #f8fafc;
+}
+
+.privateTheme :global(.ql-toolbar.ql-snow) {
+    background-color: #fef2f2;
+    border-color: #fecaca;
+}
+
+.privateTheme :global(.ql-container.ql-snow) {
+    border-color: #fecaca;
+    background-color: #fffafb;
+}
+
+.privateTheme:focus-within :global(.ql-toolbar.ql-snow) {
+    border-color: #ef4444;
+}
+
+.privateTheme:focus-within :global(.ql-container.ql-snow) {
+    border-color: #ef4444;
+}
+

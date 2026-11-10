@@ -1,0 +1,178 @@
+/* Base Wrapper */
+.inputWrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    padding: 4px 11px;
+    background-color: var(--input-bg, #ffffff);
+    border: 1px solid var(--input-border, #d9d9d9);
+    border-radius: var(--input-radius, 6px);
+    transition: all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+/* Input Element */
+.input {
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--input-text, #000000d9);
+    font-size: inherit;
+    line-height: 1.5715;
+    font-family: inherit;
+}
+
+.input::placeholder {
+    color: var(--input-placeholder, #00000045);
+}
+
+.input:disabled {
+    color: var(--input-text-disabled, #00000045);
+    cursor: not-allowed;
+}
+
+/* Sizes */
+.size-small {
+    padding: 0px 7px;
+    height: 24px;
+    font-size: 12px;
+}
+
+.size-medium {
+    padding: 4px 11px;
+    height: 32px;
+    font-size: 14px;
+}
+
+.size-large {
+    padding: 6px 15px;
+    height: 40px;
+    font-size: 16px;
+}
+
+/* Variants */
+.variant-outlined {
+    background-color: #ffffff;
+    border: 1px solid #d9d9d9;
+}
+
+.variant-filled {
+    background-color: #f5f5f5;
+    border: 1px solid transparent;
+}
+
+.variant-filled:hover {
+    background-color: #ebebeb;
+}
+
+.variant-borderless {
+    background-color: transparent;
+    border: 1px solid transparent;
+}
+
+/* States */
+.focused {
+    border-color: var(--input-focus-border, #1677ff);
+    box-shadow: 0 0 0 2px rgba(5, 145, 255, 0.1);
+    outline: 0;
+}
+
+.hovered:not(.focused):not(.disabled) {
+    border-color: var(--input-hover-border, #4096ff);
+}
+
+.disabled {
+    background-color: var(--input-disabled-bg, #f5f5f5);
+    color: var(--input-disabled-text, #00000045);
+    cursor: not-allowed;
+    border-color: #d9d9d9;
+}
+
+.readOnly {
+    background-color: #fafafa;
+    cursor: default;
+}
+
+/* Status */
+.error {
+    border-color: var(--input-error-border, #ff4d4f);
+}
+
+.error.focused {
+    box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.1);
+}
+
+.warning {
+    border-color: var(--input-warning-border, #faad14);
+}
+
+.warning.focused {
+    box-shadow: 0 0 0 2px rgba(250, 173, 20, 0.1);
+}
+
+/* Prefix & Suffix */
+.prefix,
+.suffix {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    color: #00000045;
+    user-select: none;
+}
+
+.prefix {
+    margin-right: 8px;
+}
+
+.suffix {
+    margin-left: 8px;
+}
+
+.hasPrefix .input {
+    padding-left: 0;
+}
+
+.hasSuffix .input {
+    padding-right: 0;
+}
+
+/* Clear Button */
+.clearButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin-left: 4px;
+    border-radius: 50%;
+    background-color: #00000025;
+    color: #fff;
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+}
+
+.inputWrapper:hover .clearButton {
+    opacity: 1;
+}
+
+.clearButton:hover {
+    background-color: #00000045;
+}
+
+/* Character Count */
+.count {
+    flex-shrink: 0;
+    margin-left: 8px;
+    color: #00000045;
+    font-size: 12px;
+    white-space: nowrap;
+}
