@@ -7,6 +7,10 @@
     RewriteEngine On
     RewriteBase /
 
+    # Pass Authorization Header to PHP (Required for Bearer Token on Apache / cPanel / PHP-FPM)
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
     # 1. Route API requests to PHP backend
     RewriteRule ^api/(.*)$ server/public/index.php [QSA,L]
     RewriteRule ^api$ server/public/index.php [QSA,L]
