@@ -40,8 +40,8 @@ const Login = () => {
                     <div className={styles.logoIcon}>
                         <BiGridAlt />
                     </div>
-                    <h1 className={styles.title}>IMP Portal</h1>
-                    <p className={styles.subtitle}>Internal Management Platform</p>
+                    <h1 className={styles.title}>ERP Portal</h1>
+                    <p className={styles.subtitle}>Enterprise Resources Platform</p>
                 </div>
 
                 {error && (
@@ -96,22 +96,9 @@ const Login = () => {
                         className={styles.loginButton}
                         disabled={isLoading}
                     >
-                        {isLoading ? 'Signing In...' : 'Sign In to IMP'}
+                        {isLoading ? 'Signing In...' : 'Sign In to ERP'}
                     </button>
                 </form>
-
-                <div style={{
-                    marginTop: '20px',
-                    padding: '10px',
-                    background: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    color: '#64748b',
-                    textAlign: 'center'
-                }}>
-                    Default Super Admin: <strong>superadmin</strong> | Password: <strong>Admin@12345</strong>
-                </div>
             </motion.div>
         </div>
     );
