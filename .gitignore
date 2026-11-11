@@ -5,9 +5,13 @@ vendor/
 # Environment files
 server/.env
 client/.env.local
+server/storage/keys/
+*.json.key
 
 # Logs and cache
 server/storage/logs/*.log
+server/public/uploads/
+test_gdrive.php
 *.log
 
 # Raw legacy dumps (the complete database is packaged in database_imp_export.zip)

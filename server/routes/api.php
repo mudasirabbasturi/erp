@@ -153,12 +153,46 @@ $router->group('/api', function (Router $api) {
     $api->get('/activity-logs', [ActivityLogController::class, 'index'], [AuthMiddleware::class]);
 
     // ----------------------------------------------------
-    // TRACKING & USER ACTIVITY
+    // TRACKING & USER ACTIVITY (Web & Python Desktop Agent)
     // ----------------------------------------------------
+    // Desktop Agent Endpoints (Compatible with Python tracker: /api/track/...)
+    $api->get('/track/settings', [TrackingController::class, 'getTrackerSettings']);
+    $api->get('/track/screenshot/pending/{userId}', [TrackingController::class, 'checkPendingScreenshot']);
+    $api->post('/track/screenshot', [TrackingController::class, 'uploadScreenshot']);
+    $api->post('/track/activity', [TrackingController::class, 'storeActivity']);
+    $api->get('/track/users', [TrackingController::class, 'index']);
+    $api->get('/track/screenshots', [TrackingController::class, 'getScreenshots']);
+    $api->get('/track/screenshots/latest-all', [TrackingController::class, 'getLatestAllScreenshots']);
+    $api->post('/track/screenshot/trigger', [TrackingController::class, 'triggerScreenshot']);
+    $api->get('/track/active-status/{userId}', [TrackingController::class, 'checkActiveStatus']);
+    $api->post('/track/update-status', [TrackingController::class, 'updateStatusHeartbeat']);
+    $api->post('/track/toggle-permission', [TrackingController::class, 'toggleWfh']);
+    $api->post('/track/toggle-logout-restriction', [TrackingController::class, 'toggleLogoutRestriction']);
+    $api->post('/track/settings/update', [TrackingController::class, 'updateGlobalSettings']);
+    $api->get('/track/activity/stats', [TrackingController::class, 'getActivityStats']);
+
+    // Web Dashboard Management Endpoints
     $api->group('/tracking', function (Router $track) {
         $track->get('/users', [TrackingController::class, 'index']);
         $track->get('/activity/stats', [TrackingController::class, 'getActivityStats']);
         $track->post('/activity', [TrackingController::class, 'storeActivity']);
+        $track->get('/screenshots', [TrackingController::class, 'getScreenshots']);
+        $track->get('/screenshots/latest-all', [TrackingController::class, 'getLatestAllScreenshots']);
+        $track->post('/screenshots/delete', [TrackingController::class, 'deleteScreenshots']);
+        $track->post('/screenshot/trigger', [TrackingController::class, 'triggerScreenshot']);
+        $track->get('/active-status/{userId}', [TrackingController::class, 'checkActiveStatus']);
+        $track->post('/toggle-permission', [TrackingController::class, 'toggleWfh']);
+        $track->post('/toggle-logout-restriction', [TrackingController::class, 'toggleLogoutRestriction']);
+        $track->get('/settings', [TrackingController::class, 'getTrackerSettings']);
+        $track->post('/settings', [TrackingController::class, 'updateGlobalSettings']);
+        $track->post('/settings/update', [TrackingController::class, 'updateGlobalSettings']);
+    }, [AuthMiddleware::class]);
+
+    // Google Drive & Cloud Storage Settings
+    $api->group('/settings/google-drive', function (Router $gd) {
+        $gd->get('', [SettingsController::class, 'getGoogleDriveSettings']);
+        $gd->post('/test', [SettingsController::class, 'testGoogleDrive']);
+        $gd->post('/update', [SettingsController::class, 'updateGoogleDrive']);
     }, [AuthMiddleware::class]);
 
     // ----------------------------------------------------
@@ -168,6 +202,7 @@ $router->group('/api', function (Router $api) {
         $settings->get('', [SettingsController::class, 'getSettings']);
         $settings->post('', [SettingsController::class, 'updateSettings']);
         $settings->post('/ai/test', [SettingsController::class, 'testAIConnection']);
+        $settings->post('/ai/switch-model', [SettingsController::class, 'switchAIModel']);
         $settings->post('/ai/chat', [SettingsController::class, 'chatAI']);
         $settings->get('/ai/conversations', [SettingsController::class, 'getConversations']);
         $settings->get('/ai/messages', [SettingsController::class, 'getConversationMessages']);

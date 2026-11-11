@@ -43,11 +43,23 @@ class Database
         return $stmt;
     }
 
+    public static function execute(string $sql, array $params = []): int
+    {
+        $stmt = self::getConnection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->rowCount();
+    }
+
     public static function fetch(string $sql, array $params = []): ?array
     {
         $stmt = self::query($sql, $params);
         $result = $stmt->fetch();
         return $result ?: null;
+    }
+
+    public static function fetchOne(string $sql, array $params = []): ?array
+    {
+        return self::fetch($sql, $params);
     }
 
     public static function fetchAll(string $sql, array $params = []): array

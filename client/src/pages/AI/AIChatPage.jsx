@@ -9,90 +9,27 @@ import {
     BiCog,
     BiShieldQuarter,
     BiLoaderAlt,
-    BiSearch,
-    BiLineChart,
-    BiFolder,
     BiCopy,
-    BiCheck
+    BiCheck,
+    BiPaperclip,
+    BiX,
+    BiFile
 } from 'react-icons/bi';
 import apiClient from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { usePageActions } from '../../context/PageActionContext';
 import { useToast } from '../../components/ui/Toast';
+import { renderAIMarkdown, AI_PROVIDER_MODELS } from '../../utils/aiMarkdown';
 import styles from './AIChatPage.module.css';
 
 const QUICK_PROMPTS = [
-    { title: '➕ Create New Project', prompt: 'Create a new project with title (Commercial Medical Center Takeoff)' },
-    { title: '✏️ Update Project Status', prompt: 'Update project status to Completed' },
-    { title: '🔍 Find Project by Name', prompt: 'Find project with name Iron Wolf and show details' },
-    { title: '📊 Active Projects Summary', prompt: 'Give me a summary of all active projects in the system' },
-    { title: '⏱️ Compare Team Tracker', prompt: 'Compare team tracker records and activity report' },
-    { title: '👥 Staff Workload & Points', prompt: 'Analyze recent staff activity, idle hours, and team member points' }
+    { title: '📊 Export Pending to Excel', prompt: 'Export all projects with status Pending into an Excel sheet (.xlsx) with client details' },
+    { title: '📄 Generate Bid Summary PDF', prompt: 'Generate an executive bid summary PDF report of all active projects' },
+    { title: '🔍 Fuzzy Project Lookup', prompt: 'Find project Canadain 17 or Iron Wolf and summarize full scope, client & team' },
+    { title: '⏱️ Team Tracker & Activity', prompt: 'Compare team tracker activity logs, clicks, keystrokes and top apps for yesterday and today' },
+    { title: '🎨 Architectural Concept Image', prompt: 'Generate a modern commercial architectural facade rendering with brick and ACP panels' },
+    { title: '➕ Create Project Entry', prompt: 'Create a new project with title Commercial Medical Center Takeoff' }
 ];
-
-// Helper to format basic markdown to safe HTML
-const renderMarkdown = (text) => {
-    if (!text) return '';
-    let html = text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-
-    // Code blocks
-    html = html.replace(/```([\s\S]*?)```/g, '<pre style="background:#1e293b; color:#f8fafc; padding:12px; border-radius:8px; overflow-x:auto;"><code>$1</code></pre>');
-    // Inline code
-    html = html.replace(/`([^`]+)`/g, '<code style="background:#f1f5f9; color:#e11d48; padding:2px 6px; border-radius:4px; font-size:12px;">$1</code>');
-    // Bold
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    // Links [text](url)
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-
-    // Headings
-    html = html.replace(/^### (.*$)/gim, '<h3 style="font-size:16px; font-weight:800; margin:12px 0 6px;">$1</h3>');
-    html = html.replace(/^## (.*$)/gim, '<h2 style="font-size:18px; font-weight:800; margin:14px 0 8px;">$1</h2>');
-    html = html.replace(/^# (.*$)/gim, '<h1 style="font-size:20px; font-weight:800; margin:16px 0 10px;">$1</h1>');
-
-    // Simple table parsing
-    if (html.includes('|')) {
-        const lines = html.split('\n');
-        let inTable = false;
-        let tableHtml = '<table style="width:100%; border-collapse:collapse; margin:12px 0; font-size:12.5px;">';
-        const newLines = [];
-
-        for (let line of lines) {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
-                const cells = trimmed.slice(1, -1).split('|').map(c => c.trim());
-                if (!inTable) {
-                    inTable = true;
-                    tableHtml += '<thead><tr>' + cells.map(c => `<th style="background:#f1f5f9; padding:8px 10px; border:1px solid #e2e8f0; font-weight:700;">${c}</th>`).join('') + '</tr></thead><tbody>';
-                } else if (trimmed.includes('---')) {
-                    // separator line, skip
-                    continue;
-                } else {
-                    tableHtml += '<tr>' + cells.map(c => `<td style="padding:8px 10px; border:1px solid #e2e8f0; background:#fff;">${c}</td>`).join('') + '</tr>';
-                }
-            } else {
-                if (inTable) {
-                    inTable = false;
-                    tableHtml += '</tbody></table>';
-                    newLines.push(tableHtml);
-                    tableHtml = '<table style="width:100%; border-collapse:collapse; margin:12px 0; font-size:12.5px;">';
-                }
-                newLines.push(line);
-            }
-        }
-        if (inTable) {
-            tableHtml += '</tbody></table>';
-            newLines.push(tableHtml);
-        }
-        html = newLines.join('\n');
-    }
-
-    // Line breaks
-    html = html.replace(/\n\n/g, '<br/><br/>').replace(/\n/g, '<br/>');
-    return html;
-};
 
 const AIChatPage = () => {
     const navigate = useNavigate();
@@ -104,13 +41,17 @@ const AIChatPage = () => {
     const [currentConversationId, setCurrentConversationId] = useState(0);
     const [messages, setMessages] = useState([]);
     const [inputPrompt, setInputPrompt] = useState('');
+    const [attachedFiles, setAttachedFiles] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [activeProvider, setActiveProvider] = useState('gemini');
-    const [activeModel, setActiveModel] = useState('gemini-1.5-pro');
+    const [activeProvider, setActiveProvider] = useState('groq');
+    const [activeModel, setActiveModel] = useState('llama-3.3-70b-versatile');
+    const [providerConfigs, setProviderConfigs] = useState({});
+    const [switchingModel, setSwitchingModel] = useState(false);
     const [copiedIdx, setCopiedIdx] = useState(null);
 
     const messagesEndRef = useRef(null);
     const textareaRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -131,17 +72,55 @@ const AIChatPage = () => {
         try {
             const res = await apiClient.get('/settings');
             if (res.success && res.data) {
-                const prov = res.data.ai_active_provider || 'gemini';
+                const prov = res.data.ai_active_provider || 'groq';
                 setActiveProvider(prov);
+                const cfgs = {};
+                Object.keys(AI_PROVIDER_MODELS).forEach((pid) => {
+                    cfgs[pid] = res.data[`ai_provider_${pid}`] || {};
+                });
+                setProviderConfigs(cfgs);
                 const pConfig = res.data[`ai_provider_${prov}`];
                 if (pConfig && pConfig.model) {
                     setActiveModel(pConfig.model);
+                } else {
+                    setActiveModel(AI_PROVIDER_MODELS[prov]?.models?.[0] || '');
                 }
             }
         } catch (err) {
             console.error('Failed to load AI settings:', err);
         }
     }, []);
+
+    const handleQuickSwitch = async (nextProvider, nextModel = '') => {
+        const chosenModel = nextModel || providerConfigs[nextProvider]?.model || AI_PROVIDER_MODELS[nextProvider]?.models?.[0] || '';
+        setActiveProvider(nextProvider);
+        setActiveModel(chosenModel);
+        setSwitchingModel(true);
+        try {
+            const res = await apiClient.post('/settings/ai/switch-model', {
+                provider: nextProvider,
+                model: chosenModel
+            });
+            if (!res.success) {
+                toast.error('Switch Failed', res.message || 'Could not switch AI model');
+            }
+        } catch (err) {
+            toast.error('Switch Failed', err.message || 'Could not switch AI model');
+        } finally {
+            setSwitchingModel(false);
+        }
+    };
+
+    const handleFileSelect = (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+        setAttachedFiles((prev) => [...prev, ...files].slice(0, 5));
+        e.target.value = '';
+    };
+
+    const removeAttachedFile = (idx) => {
+        setAttachedFiles((prev) => prev.filter((_, i) => i !== idx));
+    };
 
     const selectConversation = useCallback(async (convId) => {
         setCurrentConversationId(convId);
@@ -173,25 +152,44 @@ const AIChatPage = () => {
     }, [messages, loading]);
 
     const handleSendMessage = async (customText = null) => {
-        const textToSend = customText || inputPrompt;
-        if (!textToSend.trim() || loading) return;
+        const textToSend = (customText !== null ? customText : inputPrompt).trim();
+        const filesToSend = customText !== null ? [] : attachedFiles;
+        if ((!textToSend && filesToSend.length === 0) || loading) return;
+
+        const fileBadgeText = filesToSend.length > 0
+            ? `\n\n📎 Attached: ${filesToSend.map((f) => f.name).join(', ')}`
+            : '';
 
         const userMsg = {
             id: Date.now(),
             role: 'user',
-            content: textToSend,
+            content: (textToSend || 'Analyze the attached file(s)') + fileBadgeText,
             created_at: new Date().toISOString()
         };
 
         setMessages((prev) => [...prev, userMsg]);
-        setInputPrompt('');
+        if (customText === null) {
+            setInputPrompt('');
+            setAttachedFiles([]);
+        }
         setLoading(true);
 
         try {
-            const res = await apiClient.post('/settings/ai/chat', {
-                message: textToSend,
-                conversation_id: currentConversationId
-            });
+            let payload;
+            if (filesToSend.length > 0) {
+                const fd = new FormData();
+                fd.append('message', textToSend);
+                fd.append('conversation_id', String(currentConversationId || 0));
+                filesToSend.forEach((file) => fd.append('attachments[]', file));
+                payload = fd;
+            } else {
+                payload = {
+                    message: textToSend,
+                    conversation_id: currentConversationId
+                };
+            }
+
+            const res = await apiClient.post('/settings/ai/chat', payload);
 
             if (res.success && res.data) {
                 const aiMsg = {
@@ -294,9 +292,51 @@ const AIChatPage = () => {
                     <div className={styles.chatHeaderLeft}>
                         <div className={styles.modelBadge}>
                             <span className={styles.modelDot}></span>
-                            <span className={styles.providerName}>{activeProvider}</span>
+                            <select
+                                value={activeProvider}
+                                disabled={switchingModel}
+                                onChange={(e) => handleQuickSwitch(e.target.value)}
+                                style={{
+                                    border: 'none',
+                                    background: 'transparent',
+                                    fontWeight: 800,
+                                    fontSize: '12px',
+                                    color: '#312e81',
+                                    cursor: 'pointer',
+                                    outline: 'none'
+                                }}
+                                title="Switch AI Provider"
+                            >
+                                {Object.entries(AI_PROVIDER_MODELS).map(([pid, info]) => (
+                                    <option key={pid} value={pid}>
+                                        {info.label}{providerConfigs[pid]?.has_api_key ? ' ✓' : ''}
+                                    </option>
+                                ))}
+                            </select>
                             <span className={styles.modelDivider}>/</span>
-                            <span className={styles.modelName}>{activeModel}</span>
+                            <select
+                                value={activeModel}
+                                disabled={switchingModel}
+                                onChange={(e) => handleQuickSwitch(activeProvider, e.target.value)}
+                                style={{
+                                    border: 'none',
+                                    background: 'transparent',
+                                    fontWeight: 600,
+                                    fontSize: '12px',
+                                    color: '#4f46e5',
+                                    cursor: 'pointer',
+                                    outline: 'none',
+                                    maxWidth: '185px'
+                                }}
+                                title="Switch Model Version"
+                            >
+                                {(AI_PROVIDER_MODELS[activeProvider]?.models || [activeModel]).map((m) => (
+                                    <option key={m} value={m}>{m}</option>
+                                ))}
+                                {activeModel && !(AI_PROVIDER_MODELS[activeProvider]?.models || []).includes(activeModel) && (
+                                    <option value={activeModel}>{activeModel}</option>
+                                )}
+                            </select>
                         </div>
                         <span className={styles.guardrailTag} title="Safety Policy: Permanent Data Deletion is blocked">
                             <BiShieldQuarter size={14} /> Delete Blocked (Safe Mode)
@@ -360,7 +400,7 @@ const AIChatPage = () => {
                                         ) : (
                                             <div>
                                                 <div
-                                                    dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                                                    dangerouslySetInnerHTML={{ __html: renderAIMarkdown(msg.content) }}
                                                 />
                                                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
                                                     <button
@@ -407,20 +447,82 @@ const AIChatPage = () => {
 
                 {/* Bottom Input Box */}
                 <div className={styles.chatInputArea}>
+                    {attachedFiles.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                            {attachedFiles.map((file, idx) => (
+                                <div
+                                    key={`${file.name}-${idx}`}
+                                    style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        padding: '4px 10px',
+                                        borderRadius: '8px',
+                                        background: '#eef2ff',
+                                        border: '1px solid #c7d2fe',
+                                        color: '#3730a3',
+                                        fontSize: '12px',
+                                        fontWeight: 600
+                                    }}
+                                >
+                                    <BiFile size={14} />
+                                    <span>{file.name}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeAttachedFile(idx)}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4f46e5', display: 'flex', padding: 0 }}
+                                        title="Remove file"
+                                    >
+                                        <BiX size={15} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
                     <div className={styles.inputWrapper}>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            multiple
+                            accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.csv,.txt,.json,.md,.xml,.tsv"
+                            onChange={handleFileSelect}
+                            style={{ display: 'none' }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={loading}
+                            title="Attach PDF, Image, CSV, or Scope Document"
+                            style={{
+                                background: '#f8fafc',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '8px',
+                                width: '36px',
+                                height: '36px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#475569',
+                                cursor: 'pointer',
+                                flexShrink: 0
+                            }}
+                        >
+                            <BiPaperclip size={18} />
+                        </button>
                         <textarea
                             ref={textareaRef}
                             value={inputPrompt}
                             onChange={(e) => setInputPrompt(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="Ask AI anything about your projects, tracker records, or team metrics... (Press Enter to send)"
+                            placeholder="Ask AI anything, export PDF/Excel reports, generate visuals, or attach a PDF/image... (Enter to send)"
                             rows={1}
                             className={styles.textarea}
                         />
                         <button
                             type="button"
                             onClick={() => handleSendMessage()}
-                            disabled={!inputPrompt.trim() || loading}
+                            disabled={(!inputPrompt.trim() && attachedFiles.length === 0) || loading}
                             className={styles.sendBtn}
                         >
                             {loading ? <BiLoaderAlt className="spin" /> : <BiSend />}
@@ -428,7 +530,7 @@ const AIChatPage = () => {
                     </div>
 
                     <div className={styles.inputFooter}>
-                        <span>🔒 AI operates under Read/Add/Edit boundaries. Data deletion is permanently disabled.</span>
+                        <span>🔒 Tools active: Fuzzy ERP Search, PDF Reports, Excel (.xlsx) Exports, Image Gen & Multimodal Files. Delete blocked.</span>
                         <span>Shift + Enter for new line</span>
                     </div>
                 </div>

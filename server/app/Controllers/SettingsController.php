@@ -9,6 +9,87 @@ use Core\Database;
 class SettingsController extends Controller
 {
     /**
+     * Get Google Drive configuration details
+     */
+    public function getGoogleDriveSettings(Request $request): Response
+    {
+        $row = Database::fetchOne("SELECT google_drive_folder_id FROM tracker_settings ORDER BY id ASC LIMIT 1");
+        $folderId = $row['google_drive_folder_id'] ?? getenv('GOOGLE_DRIVE_FOLDER_ID') ?: '1FuuCUVEv-jNQfufj-8g4IkSO0RP6s1XX';
+
+        $keyPath = getenv('GOOGLE_APPLICATION_CREDENTIALS') ?: dirname(__DIR__, 2) . '/storage/keys/google-service-account.json';
+        $email = '';
+        if (file_exists($keyPath)) {
+            $json = json_decode(file_get_contents($keyPath), true);
+            $email = $json['client_email'] ?? '';
+        }
+
+        return Response::success([
+            'folder_id' => $folderId,
+            'service_account_email' => $email,
+            'credentials_path' => $keyPath,
+            'has_credentials' => file_exists($keyPath)
+        ]);
+    }
+
+    /**
+     * Test Google Drive connection with folder
+     */
+    public function testGoogleDrive(Request $request): Response
+    {
+        $folderId = trim((string)$request->input('folder_id', ''));
+        if (!$folderId) {
+            $row = Database::fetchOne("SELECT google_drive_folder_id FROM tracker_settings ORDER BY id ASC LIMIT 1");
+            $folderId = $row['google_drive_folder_id'] ?? '1FuuCUVEv-jNQfufj-8g4IkSO0RP6s1XX';
+        }
+
+        try {
+            $keyPath = getenv('GOOGLE_APPLICATION_CREDENTIALS') ?: dirname(__DIR__, 2) . '/storage/keys/google-service-account.json';
+            $service = new \App\Services\GoogleDriveService($keyPath, $folderId);
+            $token = $service->getAccessToken();
+
+            $ch = curl_init("https://www.googleapis.com/drive/v3/files/" . urlencode($folderId) . "?fields=id,name,capabilities,owners&supportsAllDrives=true");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $token]);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+            $res = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            $data = json_decode($res, true);
+            if ($httpCode !== 200 || empty($data['id'])) {
+                return Response::error('Google Drive error (' . $httpCode . '): ' . ($data['error']['message'] ?? 'Could not read folder. Ensure folder is shared with Service Account as Editor.'));
+            }
+
+            return Response::success([
+                'folder_id' => $data['id'],
+                'folder_name' => $data['name'] ?? 'ERP Screenshots',
+                'can_add_files' => !empty($data['capabilities']['canAddChildren']),
+            ], 'Connected to Google Drive folder successfully!');
+        } catch (\Throwable $e) {
+            return Response::error('Google Drive connection failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update Google Drive folder ID in tracker_settings
+     */
+    public function updateGoogleDrive(Request $request): Response
+    {
+        $folderId = trim((string)$request->input('folder_id', ''));
+        if (!$folderId) {
+            return Response::error('Folder ID is required', 400);
+        }
+
+        Database::execute("
+            INSERT INTO tracker_settings (id, google_drive_folder_id)
+            VALUES (1, :fid)
+            ON DUPLICATE KEY UPDATE google_drive_folder_id = VALUES(google_drive_folder_id), updated_at = NOW()
+        ", ['fid' => $folderId]);
+
+        return Response::success(['folder_id' => $folderId], 'Google Drive folder ID saved successfully.');
+    }
+
+    /**
      * Get all system settings grouped by category
      */
     public function getSettings(Request $request): Response
@@ -139,139 +220,122 @@ class SettingsController extends Controller
     }
 
     /**
-     * Chat with AI Agent with database awareness and strict guardrails
+     * Switch active AI provider/model directly from Chat UI without touching saved API keys
+     */
+    public function switchAIModel(Request $request): Response
+    {
+        $provider = trim((string)$request->input('provider', ''));
+        $model = trim((string)$request->input('model', ''));
+        if ($provider === '') {
+            return Response::error('Provider is required', 400);
+        }
+
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare("
+            INSERT INTO `system_settings` (`key`, `value`, `group`, `type`, `created_at`, `updated_at`)
+            VALUES (:key, :value, 'ai', :type, NOW(), NOW())
+            ON DUPLICATE KEY UPDATE `value` = :update_val, `updated_at` = NOW()
+        ");
+
+        $stmt->execute([
+            'key' => 'ai_active_provider',
+            'value' => $provider,
+            'type' => 'string',
+            'update_val' => $provider
+        ]);
+
+        if ($model !== '') {
+            $provKey = "ai_provider_{$provider}";
+            $existing = Database::fetch("SELECT `value` FROM `system_settings` WHERE `key` = :k", ['k' => $provKey]);
+            $cfg = $existing && !empty($existing['value']) ? (json_decode($existing['value'], true) ?: []) : [];
+            $cfg['model'] = $model;
+            $jsonCfg = json_encode($cfg);
+            $stmt->execute([
+                'key' => $provKey,
+                'value' => $jsonCfg,
+                'type' => 'json',
+                'update_val' => $jsonCfg
+            ]);
+        }
+
+        return Response::success(['provider' => $provider, 'model' => $model], 'Active AI model updated');
+    }
+
+    /**
+     * Chat with AI Agent with fuzzy DB tools, multimodal attachments, PDF/Excel/Image generation & guardrails
      */
     public function chatAI(Request $request): Response
     {
-        $message = trim($request->input('message', ''));
+        $message = trim((string)$request->input('message', ''));
         $conversationId = (int)$request->input('conversation_id', 0);
         $projectId = (int)$request->input('project_id', 0);
         $currentUser = $this->user($request);
         $userId = $currentUser ? (int)$currentUser['id'] : 1;
 
-        if (empty($message)) {
-            return Response::error('Message cannot be empty', 400);
+        // Collect uploaded attachments from multipart FormData (attachments[] or file)
+        $attachments = [];
+        foreach (['attachments', 'files', 'file'] as $field) {
+            if (!isset($_FILES[$field])) continue;
+            $f = $_FILES[$field];
+            if (is_array($f['name'])) {
+                $count = count($f['name']);
+                for ($i = 0; $i < $count; $i++) {
+                    if (($f['error'][$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+                        $attachments[] = [
+                            'name' => $f['name'][$i],
+                            'type' => $f['type'][$i] ?? '',
+                            'tmp_name' => $f['tmp_name'][$i],
+                            'size' => $f['size'][$i] ?? 0,
+                        ];
+                    }
+                }
+            } elseif (($f['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+                $attachments[] = $f;
+            }
         }
 
-        // 1. Guardrail Check: Block DELETE / DROP requests
-        $lowerMsg = strtolower($message);
-        if (preg_match('/\b(delete|drop|truncate|destroy|purge|remove all)\b/i', $message) &&
-            (str_contains($lowerMsg, 'project') || str_contains($lowerMsg, 'user') || str_contains($lowerMsg, 'client') || str_contains($lowerMsg, 'database') || str_contains($lowerMsg, 'table'))) {
-            return Response::success([
-                'reply' => "⚠️ **Operation Blocked by Security Guardrails**:\nAI models are strictly forbidden from executing data deletion or removal commands (`ai_guardrail_delete = false`). All existing project, user, and client records are protected.",
-                'action_taken' => 'blocked',
-                'conversation_id' => $conversationId
-            ]);
+        if ($message === '' && empty($attachments)) {
+            return Response::error('Message or attachment is required', 400);
+        }
+        if ($message === '' && !empty($attachments)) {
+            $message = 'Please analyze the attached file(s) and summarize the key information.';
         }
 
-        // 2. Fetch Active AI Provider Configuration
+        // Fetch Active AI Provider Configuration for conversation header
         $activeSetting = Database::fetch("SELECT `value` FROM `system_settings` WHERE `key` = 'ai_active_provider'");
-        $provider = $activeSetting ? $activeSetting['value'] : 'gemini';
-
+        $provider = $activeSetting ? $activeSetting['value'] : 'groq';
         $providerSetting = Database::fetch("SELECT `value` FROM `system_settings` WHERE `key` = :k", ['k' => "ai_provider_{$provider}"]);
-        $pConfig = $providerSetting ? json_decode($providerSetting['value'], true) : [];
-        $apiKey = $pConfig['api_key'] ?? '';
-        $model = $pConfig['model'] ?? 'gemini-1.5-pro';
+        $pConfig = $providerSetting ? (json_decode($providerSetting['value'], true) ?: []) : [];
+        $model = $pConfig['model'] ?? 'gemini-2.5-flash';
 
-        // 3. Ensure Conversation Exists
         $pdo = Database::getConnection();
         if ($conversationId <= 0) {
-            $convTitle = substr($message, 0, 45) . (strlen($message) > 45 ? '...' : '');
+            $convTitle = mb_substr($message, 0, 45) . (mb_strlen($message) > 45 ? '...' : '');
             $stmt = $pdo->prepare("INSERT INTO `ai_conversations` (`user_id`, `title`, `provider`, `model`, `created_at`, `updated_at`) VALUES (:uid, :title, :p, :m, NOW(), NOW())");
             $stmt->execute(['uid' => $userId, 'title' => $convTitle, 'p' => $provider, 'm' => $model]);
             $conversationId = (int)$pdo->lastInsertId();
-        }
-
-        // Save User Message
-        $stmt = $pdo->prepare("INSERT INTO `ai_messages` (`conversation_id`, `role`, `content`, `model`, `created_at`) VALUES (:cid, 'user', :content, :m, NOW())");
-        $stmt->execute(['cid' => $conversationId, 'content' => $message, 'm' => $model]);
-
-        // 4. Built-in Agent Tools / ERP Action Resolvers
-        $agentAction = $this->resolveAgentAction($message, $conversationId, $projectId);
-        if ($agentAction !== null) {
-            $assistantReply = $agentAction['reply'];
         } else {
-            // Context-Aware Prompt Construction with Dynamic Live Database Retrieval
-            $systemContext = $this->buildSystemContext($message, $projectId);
-
-            // Include recent conversation messages so LLM has context of prior instructions
-            $historyPrompt = "";
-            if ($conversationId > 0) {
-                $history = Database::fetchAll("
-                    SELECT `role`, `content`
-                    FROM `ai_messages`
-                    WHERE `conversation_id` = :cid
-                    ORDER BY `id` DESC
-                    LIMIT 6
-                ", ['cid' => $conversationId]);
-                if (!empty($history)) {
-                    $history = array_reverse($history);
-                    $historyPrompt = "\n\n=== RECENT CONVERSATION HISTORY ===\n";
-                    foreach ($history as $h) {
-                        $r = ucfirst($h['role']);
-                        $historyPrompt .= "{$r}: " . trim($h['content']) . "\n";
-                    }
-                }
-            }
-
-            $fullPrompt = $systemContext . $historyPrompt . "\n\nUser Question: " . $message;
-
-            $aiResult = $this->callAIProvider($provider, $apiKey, $model, $fullPrompt);
-            if ($aiResult['success']) {
-                $assistantReply = $aiResult['reply'];
-
-                // Execute embedded CREATE_PROJECT tag from LLM if present
-                if (preg_match('/\[\[CREATE_PROJECT:\s*(\{.*?\})\]\]/s', $assistantReply, $cpm)) {
-                    $cData = json_decode($cpm[1], true);
-                    if ($cData && !empty($cData['title'])) {
-                        $pTitle = trim($cData['title']);
-                        $pStatus = !empty($cData['status']) ? trim($cData['status']) : 'Pending';
-                        $pDue = !empty($cData['due_date']) ? trim($cData['due_date']) : date('Y-m-d', strtotime('+30 days'));
-
-                        $newId = Database::insert('projects', [
-                            'project_title' => $pTitle,
-                            'project_progress_status' => $pStatus,
-                            'project_preview_status' => 'active',
-                            'is_project_late' => 0,
-                            'project_due_date' => $pDue,
-                            'project_admin_notes' => 'Created via AI Assistant.',
-                            'created_at' => date('Y-m-d H:i:s'),
-                            'updated_at' => date('Y-m-d H:i:s')
-                        ]);
-
-                        $badge = "\n\n---\n### ✅ Project Created in Database!\n- **[#{$newId} - {$pTitle}](/projects/view/{$newId})** (Status: `{$pStatus}`, Due: `{$pDue}`)\n- [Open Project View](/projects/view/{$newId}) · [Edit Project Form](/projects/edit/{$newId})";
-                        $assistantReply = str_replace($cpm[0], $badge, $assistantReply);
-                    }
-                }
-
-                // Execute embedded UPDATE_PROJECT tag from LLM if present
-                if (preg_match('/\[\[UPDATE_PROJECT:\s*(\{.*?\})\]\]/s', $assistantReply, $upm)) {
-                    $uData = json_decode($upm[1], true);
-                    if ($uData && !empty($uData['id']) && !empty($uData['fields'])) {
-                        $targetId = (int)$uData['id'];
-                        $fields = (array)$uData['fields'];
-                        $allowed = ['project_title', 'project_progress_status', 'project_due_date', 'project_admin_notes', 'project_estimator_notes'];
-                        $validUpdates = [];
-                        foreach ($fields as $k => $v) {
-                            if (in_array($k, $allowed)) {
-                                $validUpdates[$k] = $v;
-                            }
-                        }
-                        if (!empty($validUpdates)) {
-                            $validUpdates['updated_at'] = date('Y-m-d H:i:s');
-                            Database::update('projects', $validUpdates, 'id = :id', ['id' => $targetId]);
-                            $badge = "\n\n---\n### ✅ Project #{$targetId} Updated in Database!\n- [View Updated Project](/projects/view/{$targetId}) · [Edit Full Form](/projects/edit/{$targetId})";
-                            $assistantReply = str_replace($upm[0], $badge, $assistantReply);
-                        }
-                    }
-                }
-            } else {
-                // Graceful fallback assistant with real database context if API key not set or connection error
-                $assistantReply = $this->generateLocalAssistantReply($message, $provider, $aiResult['error'] ?? null, $projectId);
-            }
+            $stmt = $pdo->prepare("UPDATE `ai_conversations` SET `provider` = :p, `model` = :m, `updated_at` = NOW() WHERE `id` = :cid");
+            $stmt->execute(['p' => $provider, 'm' => $model, 'cid' => $conversationId]);
         }
 
-        // Save Assistant Reply
+        // Build user message text (with attachment badges persisted to history)
+        $storedUserContent = $message;
+        if (!empty($attachments)) {
+            $names = implode(', ', array_map(fn($a) => $a['name'], $attachments));
+            $storedUserContent .= "\n\n📎 Attached: {$names}";
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO `ai_messages` (`conversation_id`, `role`, `content`, `model`, `created_at`) VALUES (:cid, 'user', :content, :m, NOW())");
+        $stmt->execute(['cid' => $conversationId, 'content' => $storedUserContent, 'm' => $model]);
+
+        // Execute Advanced AI Engine (Fuzzy DB + Native Tool Calling + PDF/XLSX/Image/Multimodal)
+        $engine = new \App\Services\AIEngineService();
+        $result = $engine->handleChat($message, $conversationId, $projectId, $userId, $attachments);
+        $assistantReply = $result['reply'];
+        $provider = $result['provider'];
+        $model = $result['model'];
+
         $stmt = $pdo->prepare("INSERT INTO `ai_messages` (`conversation_id`, `role`, `content`, `model`, `created_at`) VALUES (:cid, 'assistant', :content, :m, NOW())");
         $stmt->execute(['cid' => $conversationId, 'content' => $assistantReply, 'm' => $model]);
 

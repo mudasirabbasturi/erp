@@ -34,6 +34,8 @@ import GeneralSettings from '../../pages/Settings/GeneralSettings';
 import AIChatPage from '../../pages/AI/AIChatPage';
 import UserTracking from '../../pages/Tracking/UserTracking';
 import MyActivity from '../../pages/Tracking/MyActivity';
+import LastScreenshots from '../../pages/Tracking/LastScreenshots';
+import GoogleDriveSettings from '../../pages/Settings/GoogleDriveSettings';
 import { TakeoffSessionsList, TakeoffWorkspace } from '../../modules/takeoff';
 
 const Layout = () => {
@@ -197,14 +199,16 @@ const Layout = () => {
                                 <Route path="/media" element={<MediaLibrary />} />
                                 <Route path="/activity-logs" element={<ActivityLogsList />} />
                                 
-                                {/* AI Assistant & Guardrails */}
+                                {/* AI Assistant */}
                                 <Route path="/ai-assistant" element={<AIChatPage />} />
+
+                                {/* Settings */}
                                 <Route path="/settings/ai-models" element={<AISettings />} />
-                                <Route path="/settings/general" element={<GeneralSettings />} />
-                                <Route path="/settings/api-keys" element={<GeneralSettings />} />
+                                <Route path="/settings/google-drive" element={<GoogleDriveSettings />} />
 
                                 {/* User Activity Tracking */}
                                 <Route path="/tracking/users" element={<UserTracking />} />
+                                <Route path="/tracking/instant-monitor" element={<LastScreenshots />} />
                                 <Route path="/tracking/my-activity" element={<MyActivity />} />
                                 <Route path="/tracking/activity/:userId" element={<MyActivity />} />
 

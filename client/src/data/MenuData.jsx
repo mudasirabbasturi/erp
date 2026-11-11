@@ -104,21 +104,10 @@ export const menuItems = [
         path: "/activity-logs"
     },
     {
-        title: "User Tracking",
-        label: "User Tracking",
+        title: "User Activity",
+        label: "User Activity",
         icon: <BiLineChart />,
-        submenu: [
-            {
-                title: "Team Tracking",
-                label: "Team Tracking",
-                path: "/tracking/users"
-            },
-            {
-                title: "My Activity",
-                label: "My Activity",
-                path: "/tracking/my-activity"
-            }
-        ]
+        path: "/tracking/users"
     },
     {
         title: "AI Assistant",
@@ -137,14 +126,9 @@ export const menuItems = [
                 path: "/settings/ai-models"
             },
             {
-                title: "General Settings",
-                label: "General Settings",
-                path: "/settings/general"
-            },
-            {
-                title: "API Keys & Sockets",
-                label: "API Keys & Sockets",
-                path: "/settings/api-keys"
+                title: "Google Drive Configuration",
+                label: "Google Drive Configuration",
+                path: "/settings/google-drive"
             }
         ]
     }

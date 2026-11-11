@@ -27,55 +27,55 @@ const PROVIDER_METADATA = [
         id: 'gemini',
         name: 'Google Gemini',
         logoClass: styles.logoGemini,
-        badge: 'Gemini 1.5 / 2.0',
-        desc: 'Advanced multimodal reasoning, large context windows, fast inference.',
-        defaultModel: 'gemini-1.5-pro',
-        models: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash']
+        badge: 'Gemini 2.5 Pro / Flash',
+        desc: 'Native PDF/image vision, function calling, huge 1M+ context & fast reasoning.',
+        defaultModel: 'gemini-2.5-flash',
+        models: ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
     },
     {
         id: 'claude',
         name: 'Anthropic Claude',
         logoClass: styles.logoClaude,
-        badge: 'Claude 3.5 Sonnet',
-        desc: 'High precision code analysis, nuanced context handling, executive reports.',
-        defaultModel: 'claude-3-5-sonnet-20241022',
-        models: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229']
+        badge: 'Claude 3.7 / 3.5 Sonnet',
+        desc: 'Elite structured analysis, PDF document reading, nuanced tool execution & reports.',
+        defaultModel: 'claude-3-7-sonnet-20250219',
+        models: ['claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022']
     },
     {
         id: 'chatgpt',
         name: 'OpenAI ChatGPT',
         logoClass: styles.logoChatgpt,
-        badge: 'GPT-4o / GPT-4',
-        desc: 'Flagship general reasoning, function calling, deep tabular data analysis.',
+        badge: 'GPT-4.1 / GPT-4o / o3-mini',
+        desc: 'Flagship OpenAI reasoning, reliable tool calling, Vision & DALL-E 3 image generation.',
         defaultModel: 'gpt-4o',
-        models: ['gpt-4o', 'gpt-4o-mini', 'o1-preview', 'gpt-4-turbo']
+        models: ['gpt-4.1', 'gpt-4o', 'o3-mini', 'gpt-4o-mini']
     },
     {
         id: 'deepseek',
         name: 'DeepSeek AI',
         logoClass: styles.logoDeepseek,
-        badge: 'DeepSeek Chat / R1',
-        desc: 'Ultra cost-effective reasoning, deep mathematical calculation, logic flows.',
+        badge: 'DeepSeek V3 / R1',
+        desc: 'High-efficiency reasoning & deep analytical queries with native tool support.',
         defaultModel: 'deepseek-chat',
         models: ['deepseek-chat', 'deepseek-reasoner']
     },
     {
         id: 'groq',
-        name: 'Groq / Grok (Ultra-Fast)',
+        name: 'Groq (Ultra-Fast)',
         logoClass: styles.logoGroq,
-        badge: 'Instant Inference (Free)',
-        desc: 'World fastest Llama & GPT-OSS engine with free tier and instant responses.',
-        defaultModel: 'openai/gpt-oss-120b',
-        models: ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'allam-2-7b']
+        badge: 'Llama 3.3 / GPT-OSS / Qwen3',
+        desc: 'Sub-second tool calling with Llama 3.3 70B, GPT-OSS 120B, and Qwen3 32B.',
+        defaultModel: 'llama-3.3-70b-versatile',
+        models: ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'qwen/qwen3-32b', 'openai/gpt-oss-20b']
     }
 ];
 
 const DEFAULT_PROVIDER_CONFIGS = {
-    gemini: { enabled: true, api_key: '', model: 'gemini-1.5-pro', temperature: 0.7, max_tokens: 4096 },
-    claude: { enabled: true, api_key: '', model: 'claude-3-5-sonnet-20241022', temperature: 0.7, max_tokens: 4096 },
-    chatgpt: { enabled: true, api_key: '', model: 'gpt-4o', temperature: 0.7, max_tokens: 4096 },
-    deepseek: { enabled: true, api_key: '', model: 'deepseek-chat', temperature: 0.7, max_tokens: 4096 },
-    groq: { enabled: true, api_key: '', model: 'openai/gpt-oss-120b', temperature: 0.7, max_tokens: 4096 }
+    gemini: { enabled: true, api_key: '', model: 'gemini-2.5-flash', temperature: 0.4, max_tokens: 4096 },
+    claude: { enabled: true, api_key: '', model: 'claude-3-7-sonnet-20250219', temperature: 0.4, max_tokens: 4096 },
+    chatgpt: { enabled: true, api_key: '', model: 'gpt-4o', temperature: 0.4, max_tokens: 4096 },
+    deepseek: { enabled: true, api_key: '', model: 'deepseek-chat', temperature: 0.4, max_tokens: 4096 },
+    groq: { enabled: true, api_key: '', model: 'llama-3.3-70b-versatile', temperature: 0.4, max_tokens: 4096 }
 };
 
 const AISettings = () => {

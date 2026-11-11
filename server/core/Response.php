@@ -71,6 +71,21 @@ class Response
         ], 200);
     }
 
+    public function getStatusCode(): int
+    {
+        return $this->statusCode;
+    }
+
+    public function getContent(): mixed
+    {
+        return $this->content;
+    }
+
+    public function getBody(): mixed
+    {
+        return $this->content;
+    }
+
     public function send(): void
     {
         http_response_code($this->statusCode);
