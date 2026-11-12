@@ -42,6 +42,17 @@ const LastScreenshots = () => {
         } catch (e) {}
     };
 
+    // Lock body scroll when preview image is open
+    useEffect(() => {
+        if (previewImage) {
+            const originalOverflow = document.body.style.overflow;
+            document.body.style.overflow = "hidden";
+            return () => {
+                document.body.style.overflow = originalOverflow;
+            };
+        }
+    }, [previewImage]);
+
     useEffect(() => {
         setCustomBreadcrumbs([
             { label: "User Activity", to: "/tracking/users" },

@@ -31,7 +31,7 @@ const ProtectedRoute = ({ children }) => {
                         animation: 'spin 1s linear infinite',
                         margin: '0 auto 12px'
                     }} />
-                    <div>Loading IMP Workspace...</div>
+                    <div>Loading ERP Workspace...</div>
                     <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
                 </div>
             </div>

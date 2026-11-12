@@ -16,6 +16,7 @@ import {
 import apiClient from '../../api/client';
 import AgGridTable from '../../components/Datatable/AgGridTable';
 import Select from '../../components/ui/Select/Select';
+import SingleFieldEditModal from '../../components/ui/SingleFieldEditModal';
 import { usePageActions } from '../../context/PageActionContext';
 import { useToast } from '../../components/ui/Toast';
 import styles from './Clients.module.css';
@@ -26,6 +27,20 @@ const CLIENT_TYPE_FILTER_OPTIONS = [
     { value: 'admin', label: 'Admin Clients' }
 ];
 
+const INITIAL_SINGLE_FIELD_MODAL = {
+    isOpen: false,
+    clientId: null,
+    clientTitle: '',
+    fieldName: '',
+    fieldLabel: '',
+    fieldType: 'text',
+    initialValue: '',
+    options: [],
+    step: 'any',
+    placeholder: '',
+    helperText: ''
+};
+
 const ClientsList = () => {
     const navigate = useNavigate();
     const toast = useToast();
@@ -35,6 +50,7 @@ const ClientsList = () => {
     const [columnConfigs, setColumnConfigs] = useState([]);
     const [clientTypeFilter, setClientTypeFilter] = useState('all');
     const [loading, setLoading] = useState(true);
+    const [singleFieldModal, setSingleFieldModal] = useState(INITIAL_SINGLE_FIELD_MODAL);
 
     const loadClients = useCallback(async () => {
         setLoading(true);
@@ -90,6 +106,99 @@ const ClientsList = () => {
             toast.error('Delete Failed', err.message);
         }
     };
+
+    // Open Standalone Single Column Edit Modal for Clients
+    const openSingleFieldModal = useCallback((client, fieldName, fieldLabel, fieldType = 'text', options = [], step = 'any', placeholder = '', helperText = '') => {
+        if (!client) return;
+        const currentVal = client?.[fieldName] ?? '';
+        setSingleFieldModal({
+            isOpen: true,
+            clientId: client.id,
+            clientTitle: client.name || client.title || `Client #${client.id}`,
+            fieldName,
+            fieldLabel: fieldLabel || fieldName,
+            fieldType,
+            initialValue: currentVal,
+            options,
+            step,
+            placeholder,
+            helperText
+        });
+    }, []);
+
+    // Double-Click Cell Handler for Instant Inline / Single Column Editing
+    const handleCellDoubleClicked = useCallback((event) => {
+        const { data: client, colDef } = event;
+        if (!client || !colDef) return;
+
+        const field = colDef.field;
+        const colId = colDef.colId || field;
+
+        // Skip non-editable actions & un-editable timestamps/IDs
+        if (field === 'id' || colDef.headerName === 'Actions' || field === 'created_at' || field === 'updated_at') {
+            return;
+        }
+
+        if (field === 'title') {
+            openSingleFieldModal(client, 'title', 'Client Code / Title', 'text', [], 'any', 'e.g. CLI-001');
+            return;
+        }
+
+        if (field === 'name') {
+            openSingleFieldModal(client, 'name', 'Client Name', 'text', [], 'any', 'Company or Contact Name');
+            return;
+        }
+
+        if (field === 'client_type') {
+            openSingleFieldModal(client, 'client_type', 'Client Type', 'select', [
+                { value: 'normal', label: 'Normal Client' },
+                { value: 'admin', label: 'Admin Client' }
+            ]);
+            return;
+        }
+
+        if (field === 'phone') {
+            openSingleFieldModal(client, 'phone', 'Phone Number', 'text', [], 'any', '+1 (555) 000-0000');
+            return;
+        }
+
+        if (field === 'email') {
+            openSingleFieldModal(client, 'email', 'Email Address', 'text', [], 'any', 'client@example.com');
+            return;
+        }
+
+        if (field === 'city') {
+            openSingleFieldModal(client, 'city', 'City', 'text');
+            return;
+        }
+
+        if (field === 'state') {
+            openSingleFieldModal(client, 'state', 'State / Province', 'text');
+            return;
+        }
+
+        if (field === 'country') {
+            openSingleFieldModal(client, 'country', 'Country', 'text');
+            return;
+        }
+
+        if (field === 'address') {
+            openSingleFieldModal(client, 'address', 'Physical Address', 'richtext');
+            return;
+        }
+
+        if (field === 'notes') {
+            openSingleFieldModal(client, 'notes', 'Specifications & Notes', 'richtext');
+            return;
+        }
+
+        // Custom columns fallback
+        if (field) {
+            const cfg = (columnConfigs || []).find(c => c.column_name === field);
+            const label = cfg?.label || colDef.headerName || field;
+            openSingleFieldModal(client, field, label, 'text');
+        }
+    }, [columnConfigs, openSingleFieldModal]);
 
     // Dynamically build AG Grid columns from column configs
     const columnDefs = useMemo(() => {
@@ -403,6 +512,7 @@ const ClientsList = () => {
                     rowHeight={48}
                     headerHeight={44}
                     height="calc(100vh - 210px)"
+                    onCellDoubleClicked={handleCellDoubleClicked}
                     extraHeaderActions={
                         <>
                             <button
@@ -448,6 +558,29 @@ const ClientsList = () => {
                     }
                 />
             </div>
+
+            {/* Reusable Single Column / Single Field Edit Modal */}
+            {singleFieldModal.isOpen && (
+                <SingleFieldEditModal
+                    key={`modal_client_${singleFieldModal.clientId}_${singleFieldModal.fieldName}`}
+                    isOpen={singleFieldModal.isOpen}
+                    onClose={() => setSingleFieldModal(INITIAL_SINGLE_FIELD_MODAL)}
+                    entityId={singleFieldModal.clientId}
+                    entityName="clients"
+                    recordTitle={singleFieldModal.clientTitle}
+                    fieldName={singleFieldModal.fieldName}
+                    fieldLabel={singleFieldModal.fieldLabel}
+                    fieldType={singleFieldModal.fieldType}
+                    initialValue={singleFieldModal.initialValue}
+                    options={singleFieldModal.options}
+                    step={singleFieldModal.step}
+                    placeholder={singleFieldModal.placeholder}
+                    helperText={singleFieldModal.helperText}
+                    onSuccess={async () => {
+                        await loadClients();
+                    }}
+                />
+            )}
         </div>
     );
 };

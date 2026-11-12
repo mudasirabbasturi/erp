@@ -75,6 +75,17 @@ const UserTracking = () => {
     const [previewImage, setPreviewImage] = useState(null);
     const [isPreviewVisible, setIsPreviewVisible] = useState(false);
 
+    // Lock body scroll when any modal or lightbox is open
+    useEffect(() => {
+        const anyModalOpen = isScreenshotModalOpen || isActivityModalOpen || isSettingsModalOpen || isPreviewVisible;
+        if (anyModalOpen) {
+            const originalOverflow = document.body.style.overflow;
+            document.body.style.overflow = "hidden";
+            return () => {
+                document.body.style.overflow = originalOverflow;
+            };
+        }
+    }, [isScreenshotModalOpen, isActivityModalOpen, isSettingsModalOpen, isPreviewVisible]);
     // Screenshot pagination
     const [screenshotsPage, setScreenshotsPage] = useState(1);
     const [hasMoreScreenshots, setHasMoreScreenshots] = useState(false);
@@ -545,7 +556,7 @@ const UserTracking = () => {
 
             {/* Screenshots Gallery Modal */}
             {isScreenshotModalOpen && (
-                <div className={styles.modalOverlay} onClick={() => setIsScreenshotModalOpen(false)}>
+                <div className={styles.modalOverlay}>
                     <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
                         <div className={styles.modalHeader}>
                             <div className={styles.modalHeaderLeft}>
@@ -703,7 +714,7 @@ const UserTracking = () => {
 
             {/* Activity Modal with From - To Dates */}
             {isActivityModalOpen && (
-                <div className={styles.modalOverlay} onClick={() => setIsActivityModalOpen(false)}>
+                <div className={styles.modalOverlay}>
                     <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
                         <div className={styles.modalHeader}>
                             <div className={styles.modalHeaderLeft}>
@@ -952,7 +963,7 @@ const UserTracking = () => {
 
             {/* Global Settings Modal with Styled Save Button */}
             {isSettingsModalOpen && (
-                <div className={styles.modalOverlay} onClick={() => setIsSettingsModalOpen(false)}>
+                <div className={styles.modalOverlay}>
                     <div className={styles.modalContainer} style={{ maxWidth: "560px" }} onClick={(e) => e.stopPropagation()}>
                         <form onSubmit={saveSettings}>
                             <div className={styles.modalHeader}>

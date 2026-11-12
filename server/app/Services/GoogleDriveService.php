@@ -7,23 +7,113 @@ class GoogleDriveService
 {
     private string $credentialsPath;
     private string $folderId;
+    private string $authMode = 'service_account';
+    private string $oauthClientId = '';
+    private string $oauthClientSecret = '';
+    private string $oauthRefreshToken = '';
     private ?string $accessToken = null;
     private int $tokenExpiresAt = 0;
 
-    public function __construct(?string $credentialsPath = null, ?string $folderId = null)
+    public function __construct(?string $credentialsPath = null, ?string $folderId = null, ?array $oauthConfig = null)
     {
         $this->credentialsPath = $credentialsPath ?: (getenv('GOOGLE_APPLICATION_CREDENTIALS') ?: __DIR__ . '/../../storage/keys/google-service-account.json');
         $this->folderId = $folderId ?: (getenv('GOOGLE_DRIVE_FOLDER_ID') ?: '1FuuCUVEv-jNQfufj-8g4IkSO0RP6s1XX');
+
+        if ($oauthConfig) {
+            $this->authMode = $oauthConfig['auth_mode'] ?? 'service_account';
+            $this->oauthClientId = (string)($oauthConfig['client_id'] ?? '');
+            $this->oauthClientSecret = (string)($oauthConfig['client_secret'] ?? '');
+            $this->oauthRefreshToken = (string)($oauthConfig['refresh_token'] ?? '');
+        }
     }
 
     /**
-     * Get OAuth2 Bearer Access Token using Service Account JWT.
+     * Load GoogleDriveService configured from tracker_settings in database.
+     */
+    public static function fromDatabase(?string $folderIdOverride = null): self
+    {
+        $row = null;
+        if (class_exists('\Core\Database')) {
+            $row = \Core\Database::fetchOne("SELECT * FROM tracker_settings ORDER BY id ASC LIMIT 1");
+        }
+
+        $folderId = $folderIdOverride ?: ($row['google_drive_folder_id'] ?? null);
+        $oauthConfig = null;
+        if ($row && ($row['google_auth_mode'] ?? 'service_account') === 'oauth2') {
+            $oauthConfig = [
+                'auth_mode' => 'oauth2',
+                'client_id' => $row['google_oauth_client_id'] ?? '',
+                'client_secret' => $row['google_oauth_client_secret'] ?? '',
+                'refresh_token' => $row['google_oauth_refresh_token'] ?? '',
+            ];
+        }
+
+        return new self(null, $folderId, $oauthConfig);
+    }
+
+    /**
+     * Get OAuth2 Bearer Access Token (via User OAuth2 Refresh Token or Service Account JWT).
      */
     public function getAccessToken(): string
     {
         if ($this->accessToken && time() < ($this->tokenExpiresAt - 60)) {
             return $this->accessToken;
         }
+
+        if ($this->authMode === 'oauth2') {
+            return $this->getOAuth2AccessToken();
+        }
+
+        return $this->getServiceAccountAccessToken();
+    }
+
+    /**
+     * Exchange OAuth2 Refresh Token for an Access Token (uses personal Google Drive quota).
+     */
+    private function getOAuth2AccessToken(): string
+    {
+        if (!$this->oauthClientId || !$this->oauthClientSecret || !$this->oauthRefreshToken) {
+            throw new Exception("Google OAuth 2.0 is selected, but Client ID, Client Secret, or Refresh Token is missing. Please connect your Google account in Settings.");
+        }
+
+        $now = time();
+        $ch = curl_init('https://oauth2.googleapis.com/token');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+            'client_id' => $this->oauthClientId,
+            'client_secret' => $this->oauthClientSecret,
+            'refresh_token' => $this->oauthRefreshToken,
+            'grant_type' => 'refresh_token',
+        ]));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError) {
+            throw new Exception("Failed to contact Google OAuth2 token endpoint: " . $curlError);
+        }
+
+        $data = json_decode($response, true);
+        if ($httpCode !== 200 || empty($data['access_token'])) {
+            throw new Exception("Google OAuth2 refresh error ({$httpCode}): " . ($data['error_description'] ?? $data['error'] ?? $response));
+        }
+
+        $this->accessToken = $data['access_token'];
+        $this->tokenExpiresAt = $now + (int)($data['expires_in'] ?? 3600);
+
+        return $this->accessToken;
+    }
+
+    /**
+     * Get OAuth2 Bearer Access Token using Service Account JWT.
+     */
+    private function getServiceAccountAccessToken(): string
+    {
 
         if (!file_exists($this->credentialsPath)) {
             throw new Exception("Google Service Account credentials file not found: " . $this->credentialsPath);
@@ -122,7 +212,7 @@ class GoogleDriveService
             $binaryContent .
             $closeDelimiter;
 
-        $url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,thumbnailLink,webContentLink,size';
+        $url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,webViewLink,thumbnailLink,webContentLink,size';
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -164,13 +254,51 @@ class GoogleDriveService
     }
 
     /**
+     * Download binary content of a file from Google Drive.
+     *
+     * @return array{content: string, contentType: string}
+     */
+    public function downloadFile(string $fileId): array
+    {
+        $token = $this->getAccessToken();
+        $url = 'https://www.googleapis.com/drive/v3/files/' . urlencode($fileId) . '?alt=media&supportsAllDrives=true';
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $token
+        ]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+        $content = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE) ?: 'image/jpeg';
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError) {
+            throw new Exception("cURL error downloading from Google Drive: " . $curlError);
+        }
+
+        if ($httpCode !== 200 || $content === false) {
+            throw new Exception("Google Drive download failed ({$httpCode})");
+        }
+
+        return [
+            'content' => $content,
+            'contentType' => $contentType
+        ];
+    }
+
+    /**
      * Delete a file from Google Drive.
      */
     public function deleteFile(string $fileId): bool
     {
         try {
             $token = $this->getAccessToken();
-            $url = 'https://www.googleapis.com/drive/v3/files/' . urlencode($fileId);
+            $url = 'https://www.googleapis.com/drive/v3/files/' . urlencode($fileId) . '?supportsAllDrives=true';
 
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

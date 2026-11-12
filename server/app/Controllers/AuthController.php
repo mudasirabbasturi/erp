@@ -11,13 +11,13 @@ class AuthController extends Controller
 {
     public function login(Request $request): Response
     {
-        $validated = $this->validate($request, [
-            'username' => 'required|string',
-            'password' => 'required|string',
-        ]);
+        $body = $request->all();
+        $login = $body['username'] ?? $body['email'] ?? null;
+        $password = $body['password'] ?? null;
 
-        $login = $validated['username'];
-        $password = $validated['password'];
+        if (!$login || !$password) {
+            return $this->error('Username or email and password are required.', 422);
+        }
 
         // Search by username or email
         $sql = "SELECT u.id, u.username, u.email, u.password_hash, u.role_id, u.is_super_admin, u.status,

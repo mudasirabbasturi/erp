@@ -79,6 +79,17 @@ const DatabaseTableColumns = () => {
 
     const [submitting, setSubmitting] = useState(false);
 
+    // Lock body scroll when add/edit modal is open
+    useEffect(() => {
+        if (showAddModal || showEditModal) {
+            const originalOverflow = document.body.style.overflow;
+            document.body.style.overflow = "hidden";
+            return () => {
+                document.body.style.overflow = originalOverflow;
+            };
+        }
+    }, [showAddModal, showEditModal]);
+
     // Fetch Columns for table
     const fetchColumns = useCallback(async () => {
         if (!tableName) return;

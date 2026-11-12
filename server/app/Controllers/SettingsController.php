@@ -13,7 +13,7 @@ class SettingsController extends Controller
      */
     public function getGoogleDriveSettings(Request $request): Response
     {
-        $row = Database::fetchOne("SELECT google_drive_folder_id FROM tracker_settings ORDER BY id ASC LIMIT 1");
+        $row = Database::fetchOne("SELECT * FROM tracker_settings ORDER BY id ASC LIMIT 1");
         $folderId = $row['google_drive_folder_id'] ?? getenv('GOOGLE_DRIVE_FOLDER_ID') ?: '1FuuCUVEv-jNQfufj-8g4IkSO0RP6s1XX';
 
         $keyPath = getenv('GOOGLE_APPLICATION_CREDENTIALS') ?: dirname(__DIR__, 2) . '/storage/keys/google-service-account.json';
@@ -25,6 +25,11 @@ class SettingsController extends Controller
 
         return Response::success([
             'folder_id' => $folderId,
+            'auth_mode' => $row['google_auth_mode'] ?? 'service_account',
+            'oauth_client_id' => $row['google_oauth_client_id'] ?? '',
+            'has_oauth_client_secret' => !empty($row['google_oauth_client_secret']),
+            'oauth_connected' => !empty($row['google_oauth_refresh_token']),
+            'oauth_email' => $row['google_oauth_email'] ?? '',
             'service_account_email' => $email,
             'credentials_path' => $keyPath,
             'has_credentials' => file_exists($keyPath)
@@ -32,19 +37,31 @@ class SettingsController extends Controller
     }
 
     /**
-     * Test Google Drive connection with folder
+     * Test Google Drive connection with folder (supports both OAuth 2.0 and Service Account)
      */
     public function testGoogleDrive(Request $request): Response
     {
         $folderId = trim((string)$request->input('folder_id', ''));
+        $row = Database::fetchOne("SELECT * FROM tracker_settings ORDER BY id ASC LIMIT 1");
         if (!$folderId) {
-            $row = Database::fetchOne("SELECT google_drive_folder_id FROM tracker_settings ORDER BY id ASC LIMIT 1");
             $folderId = $row['google_drive_folder_id'] ?? '1FuuCUVEv-jNQfufj-8g4IkSO0RP6s1XX';
         }
 
+        $authMode = $request->input('auth_mode') ?: ($row['google_auth_mode'] ?? 'service_account');
+
         try {
             $keyPath = getenv('GOOGLE_APPLICATION_CREDENTIALS') ?: dirname(__DIR__, 2) . '/storage/keys/google-service-account.json';
-            $service = new \App\Services\GoogleDriveService($keyPath, $folderId);
+            $oauthConfig = null;
+            if ($authMode === 'oauth2') {
+                $oauthConfig = [
+                    'auth_mode' => 'oauth2',
+                    'client_id' => $row['google_oauth_client_id'] ?? '',
+                    'client_secret' => $row['google_oauth_client_secret'] ?? '',
+                    'refresh_token' => $row['google_oauth_refresh_token'] ?? '',
+                ];
+            }
+
+            $service = new \App\Services\GoogleDriveService($keyPath, $folderId, $oauthConfig);
             $token = $service->getAccessToken();
 
             $ch = curl_init("https://www.googleapis.com/drive/v3/files/" . urlencode($folderId) . "?fields=id,name,capabilities,owners&supportsAllDrives=true");
@@ -57,21 +74,28 @@ class SettingsController extends Controller
 
             $data = json_decode($res, true);
             if ($httpCode !== 200 || empty($data['id'])) {
-                return Response::error('Google Drive error (' . $httpCode . '): ' . ($data['error']['message'] ?? 'Could not read folder. Ensure folder is shared with Service Account as Editor.'));
+                return Response::error('Google Drive error (' . $httpCode . '): ' . ($data['error']['message'] ?? 'Could not read folder. Ensure your account has Editor access to this folder.'));
+            }
+
+            // Verify actual write/upload capability (e.g. catches Service Account 0-quota on personal My Drive)
+            $testUpload = $service->uploadFile('erp-drive-test', 'erp_connection_test.txt', 'text/plain');
+            if (!empty($testUpload['id'])) {
+                $service->deleteFile($testUpload['id']);
             }
 
             return Response::success([
                 'folder_id' => $data['id'],
                 'folder_name' => $data['name'] ?? 'ERP Screenshots',
                 'can_add_files' => !empty($data['capabilities']['canAddChildren']),
-            ], 'Connected to Google Drive folder successfully!');
+                'auth_mode' => $authMode,
+            ], 'Connected and verified file upload to Google Drive folder successfully!');
         } catch (\Throwable $e) {
             return Response::error('Google Drive connection failed: ' . $e->getMessage());
         }
     }
 
     /**
-     * Update Google Drive folder ID in tracker_settings
+     * Update Google Drive settings (Folder ID, Auth Mode, OAuth2 Credentials)
      */
     public function updateGoogleDrive(Request $request): Response
     {
@@ -80,13 +104,224 @@ class SettingsController extends Controller
             return Response::error('Folder ID is required', 400);
         }
 
-        Database::execute("
-            INSERT INTO tracker_settings (id, google_drive_folder_id)
-            VALUES (1, :fid)
-            ON DUPLICATE KEY UPDATE google_drive_folder_id = VALUES(google_drive_folder_id), updated_at = NOW()
-        ", ['fid' => $folderId]);
+        $authMode = $request->input('auth_mode', 'service_account');
+        if (!in_array($authMode, ['service_account', 'oauth2'], true)) {
+            $authMode = 'service_account';
+        }
 
-        return Response::success(['folder_id' => $folderId], 'Google Drive folder ID saved successfully.');
+        $clientId = trim((string)$request->input('oauth_client_id', ''));
+        $clientSecret = trim((string)$request->input('oauth_client_secret', ''));
+        $refreshToken = trim((string)$request->input('oauth_refresh_token', ''));
+
+        $existing = Database::fetchOne("SELECT google_oauth_client_secret, google_oauth_refresh_token FROM tracker_settings ORDER BY id ASC LIMIT 1");
+        $finalSecret = $clientSecret !== '' ? $clientSecret : ($existing['google_oauth_client_secret'] ?? null);
+        $finalRefresh = $refreshToken !== '' ? $refreshToken : ($existing['google_oauth_refresh_token'] ?? null);
+
+        Database::execute("
+            INSERT INTO tracker_settings (id, google_drive_folder_id, google_auth_mode, google_oauth_client_id, google_oauth_client_secret, google_oauth_refresh_token)
+            VALUES (1, :fid, :am, :cid, :csec, :rtok)
+            ON DUPLICATE KEY UPDATE
+                google_drive_folder_id = VALUES(google_drive_folder_id),
+                google_auth_mode = VALUES(google_auth_mode),
+                google_oauth_client_id = VALUES(google_oauth_client_id),
+                google_oauth_client_secret = VALUES(google_oauth_client_secret),
+                google_oauth_refresh_token = VALUES(google_oauth_refresh_token),
+                updated_at = NOW()
+        ", [
+            'fid' => $folderId,
+            'am' => $authMode,
+            'cid' => $clientId ?: null,
+            'csec' => $finalSecret ?: null,
+            'rtok' => $finalRefresh ?: null,
+        ]);
+
+        return Response::success(['folder_id' => $folderId, 'auth_mode' => $authMode], 'Google Drive configuration updated successfully.');
+    }
+
+    /**
+     * Generate Google OAuth 2.0 Authorization URL
+     */
+    public function getGoogleDriveOAuthUrl(Request $request): Response
+    {
+        $redirectUri = trim((string)$request->input('redirect_uri', ''));
+        $clientId = trim((string)$request->input('oauth_client_id', ''));
+        $clientSecret = trim((string)$request->input('oauth_client_secret', ''));
+        $folderId = trim((string)$request->input('folder_id', ''));
+
+        $existing = Database::fetchOne("SELECT * FROM tracker_settings ORDER BY id ASC LIMIT 1");
+        if ($clientId === '') {
+            $clientId = $existing['google_oauth_client_id'] ?? '';
+        }
+        if ($clientSecret === '') {
+            $clientSecret = $existing['google_oauth_client_secret'] ?? '';
+        }
+
+        if (!$clientId || !$clientSecret) {
+            return Response::error('Please enter both OAuth Client ID and Client Secret first.', 400);
+        }
+        if (!$redirectUri) {
+            return Response::error('Redirect URI is required.', 400);
+        }
+
+        // Persist client_id, client_secret, and folder_id before redirecting
+        Database::execute("
+            INSERT INTO tracker_settings (id, google_drive_folder_id, google_auth_mode, google_oauth_client_id, google_oauth_client_secret)
+            VALUES (1, :fid, 'oauth2', :cid, :csec)
+            ON DUPLICATE KEY UPDATE
+                google_drive_folder_id = COALESCE(NULLIF(:fid2, ''), google_drive_folder_id),
+                google_auth_mode = 'oauth2',
+                google_oauth_client_id = VALUES(google_oauth_client_id),
+                google_oauth_client_secret = VALUES(google_oauth_client_secret),
+                updated_at = NOW()
+        ", [
+            'fid' => $folderId ?: ($existing['google_drive_folder_id'] ?? '1FuuCUVEv-jNQfufj-8g4IkSO0RP6s1XX'),
+            'fid2' => $folderId,
+            'cid' => $clientId,
+            'csec' => $clientSecret,
+        ]);
+
+        $secretKey = getenv('APP_KEY') ?: 'erp-gdrive-oauth-state';
+        $payload = json_encode(['redirect_uri' => $redirectUri, 'ts' => time()]);
+        $sig = hash_hmac('sha256', $payload, $secretKey);
+        $state = rtrim(strtr(base64_encode(json_encode(['p' => $payload, 's' => $sig])), '+/', '-_'), '=');
+
+        $params = http_build_query([
+            'client_id' => $clientId,
+            'redirect_uri' => $redirectUri,
+            'response_type' => 'code',
+            'scope' => 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email',
+            'access_type' => 'offline',
+            'prompt' => 'consent',
+            'state' => $state,
+        ]);
+
+        return Response::success([
+            'auth_url' => 'https://accounts.google.com/o/oauth2/v2/auth?' . $params
+        ]);
+    }
+
+    /**
+     * Public OAuth 2.0 Callback from Google: exchanges auth code for Refresh Token
+     */
+    public function googleDriveOAuthCallback(Request $request): void
+    {
+        $code = trim((string)$request->query('code', ''));
+        $error = trim((string)$request->query('error', ''));
+        $stateRaw = trim((string)$request->query('state', ''));
+
+        $renderHtml = function (bool $ok, string $title, string $message, string $email = '') {
+            header('Content-Type: text/html; charset=utf-8');
+            $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+            $safeMsg = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
+            $safeEmail = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+            $color = $ok ? '#059669' : '#dc2626';
+            $bg = $ok ? '#ecfdf5' : '#fef2f2';
+            $postMsg = $ok
+                ? "if (window.opener) { window.opener.postMessage({ type: 'GOOGLE_DRIVE_OAUTH_SUCCESS', email: " . json_encode($email) . " }, '*'); }"
+                : "if (window.opener) { window.opener.postMessage({ type: 'GOOGLE_DRIVE_OAUTH_ERROR', message: " . json_encode($message) . " }, '*'); }";
+            echo "<!DOCTYPE html><html><head><title>{$safeTitle}</title><style>body{font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f8fafc}.card{background:#fff;border-radius:12px;padding:32px;max-width:440px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.08);border:1px solid #e2e8f0}.badge{display:inline-block;padding:6px 14px;border-radius:999px;background:{$bg};color:{$color};font-weight:600;margin-bottom:12px}h2{margin:8px 0;color:#0f172a}p{color:#475569;line-height:1.5}</style></head><body><div class='card'><div class='badge'>{$safeTitle}</div><h2>" . ($ok ? "Google Drive Connected" : "Connection Failed") . "</h2><p>{$safeMsg}</p>" . ($safeEmail ? "<p><strong>Account:</strong> {$safeEmail}</p>" : "") . "<p style='font-size:13px;color:#94a3b8'>You can close this window now.</p></div><script>{$postMsg} setTimeout(function(){ window.close(); }, 1800);</script></body></html>";
+            exit;
+        };
+
+        if ($error) {
+            $renderHtml(false, 'Authorization Cancelled', 'Google returned an error: ' . $error);
+        }
+
+        if (!$code || !$stateRaw) {
+            $renderHtml(false, 'Missing Code', 'Authorization code or state parameter is missing.');
+        }
+
+        $decodedState = json_decode(base64_decode(strtr($stateRaw, '-_', '+/')), true);
+        $secretKey = getenv('APP_KEY') ?: 'erp-gdrive-oauth-state';
+        if (!$decodedState || empty($decodedState['p']) || empty($decodedState['s']) || !hash_equals(hash_hmac('sha256', $decodedState['p'], $secretKey), $decodedState['s'])) {
+            $renderHtml(false, 'Invalid State', 'Security state verification failed. Please try connecting again.');
+        }
+
+        $statePayload = json_decode($decodedState['p'], true);
+        $redirectUri = $statePayload['redirect_uri'] ?? '';
+
+        $row = Database::fetchOne("SELECT google_oauth_client_id, google_oauth_client_secret FROM tracker_settings ORDER BY id ASC LIMIT 1");
+        $clientId = $row['google_oauth_client_id'] ?? '';
+        $clientSecret = $row['google_oauth_client_secret'] ?? '';
+
+        if (!$clientId || !$clientSecret || !$redirectUri) {
+            $renderHtml(false, 'Missing Configuration', 'OAuth Client ID or Secret is missing in ERP settings.');
+        }
+
+        $ch = curl_init('https://oauth2.googleapis.com/token');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+            'code' => $code,
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+            'redirect_uri' => $redirectUri,
+            'grant_type' => 'authorization_code',
+        ]));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        $res = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $tokenData = json_decode($res, true);
+        if ($httpCode !== 200 || empty($tokenData['access_token'])) {
+            $errMsg = $tokenData['error_description'] ?? $tokenData['error'] ?? $res;
+            $renderHtml(false, 'Token Exchange Failed', 'Google rejected token exchange: ' . $errMsg);
+        }
+
+        $grantedScopes = $tokenData['scope'] ?? '';
+        if (strpos($grantedScopes, 'https://www.googleapis.com/auth/drive') === false) {
+            $renderHtml(false, 'Drive Permission Not Granted', 'You did not check the Google Drive permission box on the Google sign-in screen. Please click Reconnect Google and check "See, edit, create, and delete all of your Google Drive files".');
+        }
+
+        $refreshToken = $tokenData['refresh_token'] ?? '';
+        if (!$refreshToken) {
+            $renderHtml(false, 'No Refresh Token', 'Google did not return a refresh token. Please revoke app access in your Google Account and try again.');
+        }
+
+        // Fetch user email
+        $email = '';
+        $uch = curl_init('https://www.googleapis.com/oauth2/v2/userinfo');
+        curl_setopt($uch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($uch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $tokenData['access_token']]);
+        curl_setopt($uch, CURLOPT_TIMEOUT, 10);
+        $uRes = curl_exec($uch);
+        curl_close($uch);
+        $uData = json_decode($uRes, true);
+        if (!empty($uData['email'])) {
+            $email = $uData['email'];
+        }
+
+        Database::execute("
+            UPDATE tracker_settings
+            SET google_auth_mode = 'oauth2',
+                google_oauth_refresh_token = :rtok,
+                google_oauth_email = :email,
+                updated_at = NOW()
+            WHERE id = 1
+        ", [
+            'rtok' => $refreshToken,
+            'email' => $email ?: null,
+        ]);
+
+        $renderHtml(true, 'OAuth 2.0 Verified', 'Your Google Drive account is now connected and ready to store screenshots.', $email);
+    }
+
+    /**
+     * Disconnect OAuth 2.0 account
+     */
+    public function disconnectGoogleDriveOAuth(Request $request): Response
+    {
+        Database::execute("
+            UPDATE tracker_settings
+            SET google_oauth_refresh_token = NULL,
+                google_oauth_email = NULL,
+                updated_at = NOW()
+            WHERE id = 1
+        ");
+
+        return Response::success(null, 'Google Drive OAuth account disconnected.');
     }
 
     /**

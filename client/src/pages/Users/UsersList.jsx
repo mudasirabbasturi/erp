@@ -12,9 +12,24 @@ import {
 } from 'react-icons/bi';
 import apiClient from '../../api/client';
 import AgGridTable from '../../components/Datatable/AgGridTable';
+import SingleFieldEditModal from '../../components/ui/SingleFieldEditModal';
 import { usePageActions } from '../../context/PageActionContext';
 import { useToast } from '../../components/ui/Toast';
 import { getMediaUrl } from '../../utils/media';
+
+const INITIAL_SINGLE_FIELD_MODAL = {
+    isOpen: false,
+    userId: null,
+    userTitle: '',
+    fieldName: '',
+    fieldLabel: '',
+    fieldType: 'text',
+    initialValue: '',
+    options: [],
+    step: 'any',
+    placeholder: '',
+    helperText: ''
+};
 
 const UsersList = () => {
     const navigate = useNavigate();
@@ -24,6 +39,7 @@ const UsersList = () => {
     const [roles, setRoles] = useState([]);
     const [columnConfigs, setColumnConfigs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [singleFieldModal, setSingleFieldModal] = useState(INITIAL_SINGLE_FIELD_MODAL);
 
     const loadUsers = useCallback(async () => {
         setLoading(true);
@@ -82,6 +98,148 @@ const UsersList = () => {
         if (name.includes('account') || name.includes('finance')) return { bg: '#dcfce7', text: '#15803d', border: '#bbf7d0' };
         return { bg: '#f1f5f9', text: '#334155', border: '#e2e8f0' };
     };
+
+    // Open Standalone Single Column Edit Modal for Users
+    const openSingleFieldModal = useCallback((user, fieldName, fieldLabel, fieldType = 'text', options = [], step = 'any', placeholder = '', helperText = '') => {
+        if (!user) return;
+        const currentVal = user?.[fieldName] ?? '';
+        setSingleFieldModal({
+            isOpen: true,
+            userId: user.id,
+            userTitle: user.full_name || user.username || `Staff #${user.id}`,
+            fieldName,
+            fieldLabel: fieldLabel || fieldName,
+            fieldType,
+            initialValue: currentVal,
+            options,
+            step,
+            placeholder,
+            helperText
+        });
+    }, []);
+
+    // Double-Click Cell Handler for Instant Inline / Single Column Editing
+    const handleCellDoubleClicked = useCallback((event) => {
+        const { data: user, colDef } = event;
+        if (!user || !colDef) return;
+
+        // Immunity Safeguard: Super Admin cannot be edited
+        if (user.is_super_admin === 1) {
+            toast.warning('Protected Account', 'Super Admin account is permanently immune to edits.');
+            return;
+        }
+
+        const field = colDef.field;
+        const colId = colDef.colId || field;
+
+        // Skip non-editable actions & un-editable timestamps/IDs/passwords
+        if (
+            field === 'id' ||
+            colId === 'employee_id' ||
+            colDef.headerName === 'Actions' ||
+            field === 'created_at' ||
+            field === 'updated_at' ||
+            field === 'last_active_at'
+        ) {
+            return;
+        }
+
+        if (field === 'full_name') {
+            openSingleFieldModal(user, 'full_name', 'Full Name', 'text', [], 'any', 'First and Last Name');
+            return;
+        }
+
+        if (field === 'username') {
+            openSingleFieldModal(user, 'username', 'Username', 'text', [], 'any', 'unique username');
+            return;
+        }
+
+        if (field === 'email') {
+            openSingleFieldModal(user, 'email', 'Email Address', 'text', [], 'any', 'user@example.com');
+            return;
+        }
+
+        if (field === 'phone') {
+            openSingleFieldModal(user, 'phone', 'Phone Number', 'text', [], 'any', '+1 (555) 000-0000');
+            return;
+        }
+
+        if (field === 'role_id') {
+            const roleOptions = roles.map(r => ({ value: r.id, label: r.name }));
+            openSingleFieldModal(user, 'role_id', 'Assigned Primary Role', 'select', roleOptions);
+            return;
+        }
+
+        if (field === 'status') {
+            openSingleFieldModal(user, 'status', 'Account Status', 'select', [
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' },
+                { value: 'suspended', label: 'Suspended' }
+            ]);
+            return;
+        }
+
+        if (field === 'password' || field === 'password_hash') {
+            openSingleFieldModal(user, 'password', 'Reset Password', 'text', [], 'any', 'Enter new password (min 6 characters)');
+            return;
+        }
+
+        if (field === 'gender') {
+            openSingleFieldModal(user, 'gender', 'Gender', 'select', [
+                { value: 'male', label: 'Male' },
+                { value: 'female', label: 'Female' },
+                { value: 'other', label: 'Other' }
+            ]);
+            return;
+        }
+
+        if (field === 'dob') {
+            openSingleFieldModal(user, 'dob', 'Date of Birth', 'date');
+            return;
+        }
+
+        if (field === 'hiring_date') {
+            openSingleFieldModal(user, 'hiring_date', 'Hiring Date', 'date');
+            return;
+        }
+
+        if (field === 'joining_date') {
+            openSingleFieldModal(user, 'joining_date', 'Joining Date', 'date');
+            return;
+        }
+
+        if (field === 'leaving_date') {
+            openSingleFieldModal(user, 'leaving_date', 'Leaving Date', 'date');
+            return;
+        }
+
+        if (field === 'notes') {
+            openSingleFieldModal(user, 'notes', 'Staff Notes', 'richtext');
+            return;
+        }
+
+        if (field === 'wfh_allowed') {
+            openSingleFieldModal(user, 'wfh_allowed', 'Work From Home Allowed', 'toggle');
+            return;
+        }
+
+        if (field === 'ip_restriction') {
+            openSingleFieldModal(user, 'ip_restriction', 'IP Address Restriction', 'toggle');
+            return;
+        }
+
+        if (field === 'logout_restriction') {
+            openSingleFieldModal(user, 'logout_restriction', 'Logout Restriction', 'toggle');
+            return;
+        }
+
+        // Custom columns fallback
+        if (field) {
+            const cfg = (columnConfigs || []).find(c => c.column_name === field);
+            const label = cfg?.label || colDef.headerName || field;
+            openSingleFieldModal(user, field, label, 'text');
+        }
+    }, [columnConfigs, roles, openSingleFieldModal, toast]);
 
     const columnDefs = useMemo(() => {
         // Pinned Left: Employee ID
@@ -399,6 +557,7 @@ const UsersList = () => {
                     enableSearch={true}
                     rowHeight={48}
                     headerHeight={44}
+                    onCellDoubleClicked={handleCellDoubleClicked}
                     extraHeaderActions={
                         <>
                             <button
@@ -449,6 +608,29 @@ const UsersList = () => {
                     }}
                 />
             </div>
+
+            {/* Reusable Single Column / Single Field Edit Modal */}
+            {singleFieldModal.isOpen && (
+                <SingleFieldEditModal
+                    key={`modal_user_${singleFieldModal.userId}_${singleFieldModal.fieldName}`}
+                    isOpen={singleFieldModal.isOpen}
+                    onClose={() => setSingleFieldModal(INITIAL_SINGLE_FIELD_MODAL)}
+                    entityId={singleFieldModal.userId}
+                    entityName="users"
+                    recordTitle={singleFieldModal.userTitle}
+                    fieldName={singleFieldModal.fieldName}
+                    fieldLabel={singleFieldModal.fieldLabel}
+                    fieldType={singleFieldModal.fieldType}
+                    initialValue={singleFieldModal.initialValue}
+                    options={singleFieldModal.options}
+                    step={singleFieldModal.step}
+                    placeholder={singleFieldModal.placeholder}
+                    helperText={singleFieldModal.helperText}
+                    onSuccess={async () => {
+                        await loadUsers();
+                    }}
+                />
+            )}
         </div>
     );
 };

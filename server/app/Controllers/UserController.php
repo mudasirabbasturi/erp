@@ -365,76 +365,124 @@ class UserController extends Controller
             return $this->error('Forbidden: Super Admin account cannot be modified.', 403);
         }
 
-        $validated = $this->validate($request, [
-            'username'        => "required|string|unique:users,username,{$id}",
-            'email'           => "required|email|unique:users,email,{$id}",
-            'password'        => 'nullable|string|min:6',
-            'role_ids'        => 'nullable',
-            'role_id'         => 'nullable|integer',
-            'full_name'       => 'required|string',
-            'phone'           => 'nullable|string',
-            'avatar_media_id' => 'nullable|integer',
-            'dob'             => 'nullable|string',
-            'gender'          => 'nullable|in:male,female,other',
-            'hiring_date'     => 'nullable|string',
-            'joining_date'    => 'nullable|string',
-            'leaving_date'    => 'nullable|string',
-            'notes'           => 'nullable|string',
-            'status'          => 'nullable|in:active,inactive,suspended',
-        ]);
+        $inputData = $request->all();
+        $isPartialUpdate = !isset($inputData['username']) || !isset($inputData['full_name']);
 
-        $roleIds = $request->input('role_ids');
-        if (!is_array($roleIds) || empty($roleIds)) {
-            $roleIds = !empty($validated['role_id']) ? [(int)$validated['role_id']] : [(int)$targetUser['role_id']];
+        // Full form update: enforce strict validation
+        if (!$isPartialUpdate) {
+            $validated = $this->validate($request, [
+                'username'        => "required|string|unique:users,username,{$id}",
+                'email'           => "required|email|unique:users,email,{$id}",
+                'password'        => 'nullable|string|min:6',
+                'role_ids'        => 'nullable',
+                'role_id'         => 'nullable|integer',
+                'full_name'       => 'required|string',
+                'phone'           => 'nullable|string',
+                'avatar_media_id' => 'nullable|integer',
+                'dob'             => 'nullable|string',
+                'gender'          => 'nullable|in:male,female,other',
+                'hiring_date'     => 'nullable|string',
+                'joining_date'    => 'nullable|string',
+                'leaving_date'    => 'nullable|string',
+                'notes'           => 'nullable|string',
+                'status'          => 'nullable|in:active,inactive,suspended',
+                'wfh_allowed'     => 'nullable',
+                'ip_restriction'  => 'nullable',
+                'logout_restriction' => 'nullable',
+            ]);
+        } else {
+            // Partial single-field update validation
+            $rules = [];
+            if (isset($inputData['username'])) {
+                $rules['username'] = "required|string|unique:users,username,{$id}";
+            }
+            if (isset($inputData['email'])) {
+                $rules['email'] = "required|email|unique:users,email,{$id}";
+            }
+            if (isset($inputData['password']) && $inputData['password'] !== '') {
+                $rules['password'] = 'string|min:6';
+            }
+            if (isset($inputData['status'])) {
+                $rules['status'] = 'in:active,inactive,suspended';
+            }
+            if (isset($inputData['gender']) && $inputData['gender'] !== '') {
+                $rules['gender'] = 'in:male,female,other';
+            }
+            $validated = !empty($rules) ? $this->validate($request, $rules) : [];
+            foreach ($inputData as $k => $v) {
+                if (!array_key_exists($k, $validated)) {
+                    $validated[$k] = $v;
+                }
+            }
         }
 
         Database::beginTransaction();
         try {
-            $primaryRoleId = (int)$roleIds[0];
+            // 1. Update `users` table fields
+            $userCols = Database::fetchAll("SHOW COLUMNS FROM users");
+            $validUserCols = array_column($userCols, 'Field');
+            $userUpdateData = [];
 
-            $userUpdateData = [
-                'username'   => $validated['username'],
-                'email'      => $validated['email'],
-                'role_id'    => $primaryRoleId,
-                'status'     => $validated['status'] ?? $targetUser['status'],
-                'updated_at' => date('Y-m-d H:i:s'),
-            ];
+            foreach ($validUserCols as $col) {
+                if (in_array($col, ['id', 'password_hash', 'created_at', 'updated_at', 'deleted_at', 'is_super_admin'])) continue;
+                if (array_key_exists($col, $validated)) {
+                    $val = $validated[$col];
+                    if (in_array($col, ['wfh_allowed', 'ip_restriction', 'logout_restriction'])) {
+                        $val = ($val === 1 || $val === '1' || $val === true) ? 1 : 0;
+                    }
+                    $userUpdateData[$col] = $val !== '' ? $val : null;
+                }
+            }
 
             if (!empty($validated['password'])) {
                 $userUpdateData['password_hash'] = Auth::hashPassword($validated['password']);
             }
 
-            Database::update('users', $userUpdateData, 'id = :id', ['id' => $id]);
+            // Sync role(s) if provided
+            if (array_key_exists('role_ids', $validated) || array_key_exists('role_id', $validated)) {
+                $roleIds = $validated['role_ids'] ?? null;
+                if (!is_array($roleIds) || empty($roleIds)) {
+                    $roleIds = !empty($validated['role_id']) ? [(int)$validated['role_id']] : [(int)$targetUser['role_id']];
+                }
+                $userUpdateData['role_id'] = (int)$roleIds[0];
 
-            // Sync user_roles
-            Database::delete('user_roles', 'user_id = :id', ['id' => $id]);
-            foreach ($roleIds as $rId) {
-                Database::insert('user_roles', [
-                    'user_id' => $id,
-                    'role_id' => (int)$rId
-                ]);
+                Database::delete('user_roles', 'user_id = :id', ['id' => $id]);
+                foreach ($roleIds as $rId) {
+                    Database::insert('user_roles', [
+                        'user_id' => $id,
+                        'role_id' => (int)$rId
+                    ]);
+                }
             }
 
-            // Update profile
-            $profileUpdateData = [
-                'full_name'       => $validated['full_name'],
-                'phone'           => $validated['phone'] ?? null,
-                'avatar_media_id' => $validated['avatar_media_id'] ?? null,
-                'dob'             => !empty($validated['dob']) ? $validated['dob'] : null,
-                'gender'          => $validated['gender'] ?? null,
-                'hiring_date'     => !empty($validated['hiring_date']) ? $validated['hiring_date'] : null,
-                'joining_date'    => !empty($validated['joining_date']) ? $validated['joining_date'] : null,
-                'leaving_date'    => !empty($validated['leaving_date']) ? $validated['leaving_date'] : null,
-                'notes'           => $validated['notes'] ?? null,
-                'updated_at'      => date('Y-m-d H:i:s'),
-            ];
+            if (!empty($userUpdateData)) {
+                $userUpdateData['updated_at'] = date('Y-m-d H:i:s');
+                Database::update('users', $userUpdateData, 'id = :id', ['id' => $id]);
+            }
 
-            $profileExists = Database::fetchColumn("SELECT COUNT(*) FROM user_profiles WHERE user_id = :id", ['id' => $id]);
-            if ($profileExists) {
-                Database::update('user_profiles', $profileUpdateData, 'user_id = :id', ['id' => $id]);
-            } else {
-                $profileUpdateData['user_id'] = $id;
-                Database::insert('user_profiles', $profileUpdateData);
+            // 2. Update `user_profiles` table fields
+            $profileCols = Database::fetchAll("SHOW COLUMNS FROM user_profiles");
+            $validProfileCols = array_column($profileCols, 'Field');
+            $profileUpdateData = [];
+
+            foreach ($validProfileCols as $col) {
+                if (in_array($col, ['user_id', 'created_at', 'updated_at'])) continue;
+                if (array_key_exists($col, $validated)) {
+                    $val = $validated[$col];
+                    $profileUpdateData[$col] = $val !== '' ? $val : null;
+                }
+            }
+
+            if (!empty($profileUpdateData)) {
+                $profileUpdateData['updated_at'] = date('Y-m-d H:i:s');
+                $profileExists = Database::fetchColumn("SELECT COUNT(*) FROM user_profiles WHERE user_id = :id", ['id' => $id]);
+                if ($profileExists) {
+                    Database::update('user_profiles', $profileUpdateData, 'user_id = :id', ['id' => $id]);
+                } else {
+                    $profileUpdateData['user_id'] = $id;
+                    $profileUpdateData['created_at'] = date('Y-m-d H:i:s');
+                    Database::insert('user_profiles', $profileUpdateData);
+                }
             }
 
             // Sync bank accounts if provided
@@ -449,8 +497,7 @@ class UserController extends Controller
                             'account_title'          => $ba['account_title'],
                             'account_number_or_iban' => $ba['account_number_or_iban'],
                             'bank_name'              => $ba['bank_name'] ?? null,
-                            'branch_code_or_name'    => $ba['branch_code_or_name'] ?? null,
-                            'is_primary'             => !empty($ba['is_primary']) ? 1 : 0,
+                            'branch_code'            => $ba['branch_code'] ?? null,
                             'notes'                  => $ba['notes'] ?? null,
                             'created_at'             => date('Y-m-d H:i:s'),
                             'updated_at'             => date('Y-m-d H:i:s'),
@@ -459,7 +506,7 @@ class UserController extends Controller
                 }
             }
 
-            // Sync addresses if provided
+            // Save addresses if provided
             $addresses = $request->input('addresses');
             if (is_array($addresses)) {
                 Database::delete('user_addresses', 'user_id = :id', ['id' => $id]);
@@ -520,15 +567,16 @@ class UserController extends Controller
             Database::commit();
 
             $currentUser = $this->user($request);
+            $loggedUsername = $userUpdateData['username'] ?? $targetUser['username'];
             ActivityLogger::log(
                 $currentUser ? (int)$currentUser['id'] : null,
                 'updated',
                 'users',
                 $id,
-                $validated['username'],
-                "Updated user profile for '{$validated['username']}'",
+                $loggedUsername,
+                "Updated user profile for '{$loggedUsername}'",
                 $targetUser,
-                $userUpdateData
+                array_merge($userUpdateData, $profileUpdateData)
             );
 
             return $this->success(null, 'User updated successfully');

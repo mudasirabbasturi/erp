@@ -79,6 +79,7 @@ class TrackingController extends Controller
                 'wfh_allowed' => (bool)$u['wfh_allowed'],
                 'ip_restriction' => (bool)$u['ip_restriction'],
                 'logout_restriction' => (bool)$u['logout_restriction'],
+                'is_permission_granted' => (bool)$u['wfh_allowed'], // Python tracker looks for this key
                 'is_online' => $isOnline,
                 'last_active_at' => $lastTracked,
                 'total_minutes' => (int)($st['total_minutes'] ?? 0),
@@ -88,7 +89,11 @@ class TrackingController extends Controller
             ];
         }, $users);
 
-        return Response::success($data);
+        // Python tracker calls this endpoint and iterates the response directly as an array.
+        // We must return a plain JSON array, NOT wrapped in {success, data}.
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($data);
+        exit;
     }
 
     /**
@@ -112,9 +117,13 @@ class TrackingController extends Controller
 
         $allowedIps = array_filter(array_map('trim', explode(',', $row['allowed_ips'] ?? '')));
 
+        // Determine API URL: prefer DB value, fallback to env, then default
+        $apiUrl = !empty($row['api_url']) ? $row['api_url'] : (getenv('APP_URL') ?: 'http://127.0.0.1:8000');
+
         // Check if there is an immediate manual screenshot requested for this user
         $hasPendingScreenshot = false;
         if ($userId > 0) {
+            Database::execute("UPDATE users SET last_active_at = NOW(), is_online = 1 WHERE id = :uid", ['uid' => $userId]);
             $pending = Database::fetchOne("
                 SELECT id FROM pending_screenshots 
                 WHERE user_id = :uid AND status = 'pending' AND created_at >= NOW() - INTERVAL 10 MINUTE 
@@ -130,7 +139,7 @@ class TrackingController extends Controller
             'tracker_logout_restriction' => (bool)$row['logout_restriction'],
             'tracker_ip_restriction' => (bool)$row['ip_restriction'],
             'tracker_allowed_ips' => array_values($allowedIps),
-            'tracker_api_url' => getenv('APP_URL') ?: 'http://127.0.0.1:8000',
+            'tracker_api_url' => $apiUrl,
             'pending_screenshot' => $hasPendingScreenshot
         ]);
     }
@@ -145,6 +154,9 @@ class TrackingController extends Controller
             return Response::json(['pending' => false]);
         }
 
+        // Desktop tracker polls this every few seconds — refresh heartbeat
+        Database::execute("UPDATE users SET last_active_at = NOW(), is_online = 1 WHERE id = :uid", ['uid' => $userId]);
+
         $pending = Database::fetchOne("
             SELECT id FROM pending_screenshots 
             WHERE user_id = :uid AND status = 'pending' AND created_at >= NOW() - INTERVAL 10 MINUTE 
@@ -152,6 +164,34 @@ class TrackingController extends Controller
         ", ['uid' => $userId]);
 
         return Response::json(['pending' => !empty($pending)]);
+    }
+
+    /**
+     * Proxy Google Drive screenshot image cleanly so private Drive files display in <img> tags
+     */
+    public function serveDriveImage(Request $request): void
+    {
+        $driveFileId = trim((string)($request->param('driveFileId') ?? ''));
+        if (!$driveFileId || !preg_match('/^[a-zA-Z0-9_-]+$/', $driveFileId)) {
+            http_response_code(400);
+            echo 'Invalid file ID';
+            exit;
+        }
+
+        try {
+            $gdrive = GoogleDriveService::fromDatabase();
+            $file = $gdrive->downloadFile($driveFileId);
+
+            header('Content-Type: ' . $file['contentType']);
+            header('Cache-Control: private, max-age=86400');
+            header('Content-Length: ' . strlen($file['content']));
+            echo $file['content'];
+            exit;
+        } catch (Exception $e) {
+            http_response_code(404);
+            echo 'Image not found';
+            exit;
+        }
     }
 
     /**
@@ -206,39 +246,33 @@ class TrackingController extends Controller
         }
 
         $filename = time() . '_' . $userId . '_screenshot.jpg';
-        $relativeLocalPath = 'uploads/screenshots/' . $userId . '/' . $filename;
-        $fullLocalPath = __DIR__ . '/../../public/' . $relativeLocalPath;
 
-        // Ensure user directory exists
-        $dir = dirname($fullLocalPath);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
-        file_put_contents($fullLocalPath, $content);
-
-        // Attempt Google Drive upload
+        // Upload to Google Drive ONLY (no local public folder fallback)
         $driveFileId = null;
         $webViewLink = null;
         $thumbnailUrl = null;
+        $driveError = null;
 
         try {
-            $gdrive = new GoogleDriveService();
+            $gdrive = GoogleDriveService::fromDatabase();
             $uploadRes = $gdrive->uploadFile($content, $filename, 'image/jpeg');
             $driveFileId = $uploadRes['id'] ?? null;
             $webViewLink = $uploadRes['webViewLink'] ?? null;
             $thumbnailUrl = $uploadRes['thumbnailLink'] ?? null;
         } catch (Exception $e) {
-            error_log("Google Drive upload warning: " . $e->getMessage());
+            $driveError = $e->getMessage();
+            error_log("Google Drive upload FAILED for user {$userId}: " . $driveError);
+            return Response::error('Google Drive upload failed: ' . $driveError, 500);
         }
 
-        // Insert screenshot record
+        // Insert screenshot record (drive-only, no local file_path)
         $screenshotTime = !empty($timestamp) ? date('Y-m-d H:i:s', strtotime($timestamp)) : date('Y-m-d H:i:s');
         Database::execute("
             INSERT INTO user_screenshots (user_id, file_path, drive_file_id, file_name, mime_type, file_size, thumbnail_url, web_view_link, screenshot_time, created_at, updated_at)
             VALUES (:uid, :fp, :dfid, :fn, 'image/jpeg', :fs, :thumb, :wvl, :st, NOW(), NOW())
         ", [
             'uid' => $userId,
-            'fp' => $relativeLocalPath,
+            'fp' => null,
             'dfid' => $driveFileId,
             'fn' => $filename,
             'fs' => strlen($content),
@@ -247,16 +281,16 @@ class TrackingController extends Controller
             'st' => $screenshotTime
         ]);
 
-        // Complete any pending screenshot requests for this user
+        // Complete any pending screenshot requests for this user & refresh heartbeat
         Database::execute("
             UPDATE pending_screenshots SET status = 'completed' WHERE user_id = :uid AND status = 'pending'
         ", ['uid' => $userId]);
+        Database::execute("UPDATE users SET last_active_at = NOW(), is_online = 1 WHERE id = :uid", ['uid' => $userId]);
 
         return Response::success([
-            'file_path' => $relativeLocalPath,
             'drive_file_id' => $driveFileId,
-            'web_view_link' => $webViewLink
-        ], 'Screenshot uploaded successfully');
+            'web_view_link' => $webViewLink,
+        ], 'Screenshot uploaded to Google Drive successfully');
     }
 
     /**
@@ -299,16 +333,18 @@ class TrackingController extends Controller
 
         $formatted = array_map(function ($s) {
             $localUrl = !empty($s['file_path']) ? '/' . ltrim($s['file_path'], '/') : null;
-            $imageUrl = $s['web_view_link'] ?: $localUrl;
-            $thumbUrl = $s['thumbnail_url'] ?: $localUrl;
+            $driveProxyUrl = !empty($s['drive_file_id']) ? '/api/track/screenshot/image/' . $s['drive_file_id'] : null;
+            $imageUrl = $driveProxyUrl ?: ($s['web_view_link'] ?: $localUrl);
+            $thumbUrl = $driveProxyUrl ?: ($s['thumbnail_url'] ?: $localUrl);
 
             return [
                 'id' => (int)$s['id'],
                 'user_id' => (int)$s['user_id'],
-                'file_path' => $s['file_path'],
+                'file_path' => $s['file_path'] ?: $driveProxyUrl,
                 'drive_file_id' => $s['drive_file_id'],
                 'url' => $imageUrl,
                 'thumbnail_url' => $thumbUrl,
+                'web_view_link' => $s['web_view_link'],
                 'time' => $s['screenshot_time'],
                 'created_at' => $s['created_at'],
             ];
@@ -337,7 +373,7 @@ class TrackingController extends Controller
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         $rows = Database::fetchAll("SELECT id, file_path, drive_file_id FROM user_screenshots WHERE id IN ({$placeholders})", $ids);
 
-        $gdrive = new GoogleDriveService();
+        $gdrive = GoogleDriveService::fromDatabase();
 
         foreach ($rows as $r) {
             // Delete from Google Drive if exists
@@ -397,17 +433,27 @@ class TrackingController extends Controller
         }
 
         $user = Database::fetchOne("
-            SELECT last_active_at,
-                   TIMESTAMPDIFF(SECOND, last_active_at, NOW()) AS sec_diff
-            FROM users 
-            WHERE id = :id AND deleted_at IS NULL
+            SELECT u.last_active_at,
+                   TIMESTAMPDIFF(SECOND, u.last_active_at, NOW()) AS sec_diff,
+                   (SELECT TIMESTAMPDIFF(SECOND, MAX(ua.tracked_at), NOW()) FROM user_activities ua WHERE ua.user_id = u.id) AS act_sec_diff
+            FROM users u
+            WHERE u.id = :id AND u.deleted_at IS NULL
         ", ['id' => $userId]);
 
         $isActive = false;
-        if ($user && $user['last_active_at']) {
-            $secDiff = (int)$user['sec_diff'];
-            // Active if recorded within last 120 seconds
-            $isActive = ($secDiff <= 120 && $secDiff >= 0);
+        if ($user) {
+            if ($user['last_active_at'] !== null) {
+                $secDiff = (int)$user['sec_diff'];
+                if ($secDiff <= 300 && $secDiff >= 0) {
+                    $isActive = true;
+                }
+            }
+            if (!$isActive && $user['act_sec_diff'] !== null) {
+                $actDiff = (int)$user['act_sec_diff'];
+                if ($actDiff <= 300 && $actDiff >= 0) {
+                    $isActive = true;
+                }
+            }
         }
 
         return Response::json(['active' => $isActive]);
@@ -464,7 +510,8 @@ class TrackingController extends Controller
             SELECT u.id AS user_id, u.username,
                    COALESCE(up.full_name, u.username) AS name,
                    u.last_active_at,
-                   TIMESTAMPDIFF(SECOND, u.last_active_at, NOW()) AS sec_diff
+                   TIMESTAMPDIFF(SECOND, u.last_active_at, NOW()) AS sec_diff,
+                   (SELECT TIMESTAMPDIFF(SECOND, MAX(ua.tracked_at), NOW()) FROM user_activities ua WHERE ua.user_id = u.id) AS act_sec_diff
             FROM users u
             LEFT JOIN user_profiles up ON up.user_id = u.id
             WHERE u.deleted_at IS NULL AND u.status = 'active'
@@ -475,7 +522,8 @@ class TrackingController extends Controller
         foreach ($users as $u) {
             $userId = (int)$u['user_id'];
             $secDiff = $u['sec_diff'] !== null ? (int)$u['sec_diff'] : 999999;
-            $isOnline = ($secDiff <= 120 && $secDiff >= 0);
+            $actDiff = $u['act_sec_diff'] !== null ? (int)$u['act_sec_diff'] : 999999;
+            $isOnline = ($secDiff <= 300 && $secDiff >= 0) || ($actDiff <= 300 && $actDiff >= 0);
 
             // Fetch absolute latest screenshot for this user
             $latest = Database::fetchOne("
@@ -489,14 +537,16 @@ class TrackingController extends Controller
             $screenshot = null;
             if ($latest) {
                 $localUrl = !empty($latest['file_path']) ? '/' . ltrim($latest['file_path'], '/') : null;
-                $url = $latest['web_view_link'] ?: $localUrl;
-                $thumb = $latest['thumbnail_url'] ?: $localUrl;
+                $driveProxyUrl = !empty($latest['drive_file_id']) ? '/api/track/screenshot/image/' . $latest['drive_file_id'] : null;
+                $url = $driveProxyUrl ?: ($latest['web_view_link'] ?: $localUrl);
+                $thumb = $driveProxyUrl ?: ($latest['thumbnail_url'] ?: $localUrl);
 
                 $screenshot = [
                     'id' => (int)$latest['id'],
                     'file_path' => $url,
                     'url' => $url,
                     'thumbnail_url' => $thumb,
+                    'web_view_link' => $latest['web_view_link'],
                     'screenshot_time' => $latest['screenshot_time']
                 ];
             }
@@ -524,6 +574,7 @@ class TrackingController extends Controller
         $logoutRestriction = !empty($request->input('tracker_logout_restriction')) ? 1 : 0;
         $ipRestriction = !empty($request->input('tracker_ip_restriction')) ? 1 : 0;
         $allowedIps = $request->input('tracker_allowed_ips', []);
+        $apiUrl = trim($request->input('tracker_api_url', ''));
 
         if (is_array($allowedIps)) {
             $allowedIpsStr = implode(',', array_filter(array_map('trim', $allowedIps)));
@@ -532,8 +583,8 @@ class TrackingController extends Controller
         }
 
         Database::execute("
-            INSERT INTO tracker_settings (id, screenshot_interval, sync_interval, admin_password, logout_restriction, ip_restriction, allowed_ips)
-            VALUES (1, :si, :sync, :pw, :lr, :ir, :ips)
+            INSERT INTO tracker_settings (id, screenshot_interval, sync_interval, admin_password, logout_restriction, ip_restriction, allowed_ips, api_url)
+            VALUES (1, :si, :sync, :pw, :lr, :ir, :ips, :apiurl)
             ON DUPLICATE KEY UPDATE
                 screenshot_interval = VALUES(screenshot_interval),
                 sync_interval = VALUES(sync_interval),
@@ -541,6 +592,7 @@ class TrackingController extends Controller
                 logout_restriction = VALUES(logout_restriction),
                 ip_restriction = VALUES(ip_restriction),
                 allowed_ips = VALUES(allowed_ips),
+                api_url = VALUES(api_url),
                 updated_at = NOW()
         ", [
             'si' => max(10, $screenshotInterval),
@@ -548,7 +600,8 @@ class TrackingController extends Controller
             'pw' => $adminPassword ?: 'bidwinners12',
             'lr' => $logoutRestriction,
             'ir' => $ipRestriction,
-            'ips' => $allowedIpsStr
+            'ips' => $allowedIpsStr,
+            'apiurl' => $apiUrl ?: null
         ]);
 
         return Response::success(null, 'Tracker settings updated successfully.');
@@ -720,6 +773,8 @@ class TrackingController extends Controller
                 'tracked_at' => !empty($act['timestamp']) ? date('Y-m-d H:i:s', strtotime($act['timestamp'])) : date('Y-m-d H:i:s'),
             ]);
         }
+
+        Database::execute("UPDATE users SET last_active_at = NOW(), is_online = 1 WHERE id = :uid", ['uid' => $userId]);
 
         return Response::success(null, 'Activities stored successfully');
     }

@@ -66,7 +66,7 @@ const Header = ({ toggleSidebar, toggleSidebarSize, toggleSidebarVisibility, sid
                     }}>
                         <BiGridAlt size={20} />
                     </div>
-                    <span>IMP</span>
+                    <span>ERP</span>
                 </div>
 
                 {/* Mobile: single hamburger toggle */}

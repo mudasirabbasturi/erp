@@ -61,9 +61,8 @@ const Modal = ({
       role="dialog"
       aria-modal="true"
     >
-      {/* Dimmed Backdrop */}
+      {/* Dimmed Backdrop (Clicking outside does not close) */}
       <div
-        onClick={handleClose}
         style={{
           position: 'fixed',
           inset: 0,

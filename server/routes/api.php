@@ -29,6 +29,7 @@ $router->group('/api', function (Router $api) {
     // ----------------------------------------------------
     // AUTHENTICATION ROUTES
     // ----------------------------------------------------
+    $api->post('/login', [AuthController::class, 'login']);
     $api->group('/auth', function (Router $auth) {
         $auth->post('/login', [AuthController::class, 'login']);
         $auth->get('/me', [AuthController::class, 'me'], [AuthMiddleware::class]);
@@ -158,11 +159,13 @@ $router->group('/api', function (Router $api) {
     // Desktop Agent Endpoints (Compatible with Python tracker: /api/track/...)
     $api->get('/track/settings', [TrackingController::class, 'getTrackerSettings']);
     $api->get('/track/screenshot/pending/{userId}', [TrackingController::class, 'checkPendingScreenshot']);
+    $api->get('/track/screenshot/image/{driveFileId}', [TrackingController::class, 'serveDriveImage']);
     $api->post('/track/screenshot', [TrackingController::class, 'uploadScreenshot']);
     $api->post('/track/activity', [TrackingController::class, 'storeActivity']);
     $api->get('/track/users', [TrackingController::class, 'index']);
     $api->get('/track/screenshots', [TrackingController::class, 'getScreenshots']);
     $api->get('/track/screenshots/latest-all', [TrackingController::class, 'getLatestAllScreenshots']);
+    $api->post('/track/screenshots/delete', [TrackingController::class, 'deleteScreenshots']);
     $api->post('/track/screenshot/trigger', [TrackingController::class, 'triggerScreenshot']);
     $api->get('/track/active-status/{userId}', [TrackingController::class, 'checkActiveStatus']);
     $api->post('/track/update-status', [TrackingController::class, 'updateStatusHeartbeat']);
@@ -189,10 +192,13 @@ $router->group('/api', function (Router $api) {
     }, [AuthMiddleware::class]);
 
     // Google Drive & Cloud Storage Settings
+    $api->get('/settings/google-drive/oauth-callback', [SettingsController::class, 'googleDriveOAuthCallback']);
     $api->group('/settings/google-drive', function (Router $gd) {
         $gd->get('', [SettingsController::class, 'getGoogleDriveSettings']);
         $gd->post('/test', [SettingsController::class, 'testGoogleDrive']);
         $gd->post('/update', [SettingsController::class, 'updateGoogleDrive']);
+        $gd->post('/oauth-url', [SettingsController::class, 'getGoogleDriveOAuthUrl']);
+        $gd->post('/disconnect-oauth', [SettingsController::class, 'disconnectGoogleDriveOAuth']);
     }, [AuthMiddleware::class]);
 
     // ----------------------------------------------------
